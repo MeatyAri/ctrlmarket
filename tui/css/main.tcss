@@ -1,0 +1,272 @@
+/* Main Application Styles */
+
+Screen {
+    layout: grid;
+    grid-size: 1;
+    padding: 0;
+}
+
+/* Login Screen */
+LoginScreen {
+    align: center middle;
+    background: $surface-darken-1;
+}
+
+/* Signup Screen */
+SignupScreen {
+    align: center middle;
+    background: $surface-darken-1;
+}
+
+.login-container {
+    width: 50;
+    height: auto;
+    border: solid $primary;
+    padding: 2 4;
+    background: $surface;
+}
+
+.login-title {
+    text-align: center;
+    text-style: bold;
+    color: $primary;
+    margin-bottom: 1;
+}
+
+.login-error {
+    text-align: center;
+    color: $error;
+    margin-top: 1;
+}
+
+/* Dashboard Layout */
+DashboardScreen {
+    layout: horizontal;
+}
+
+.sidebar {
+    width: 20;
+    height: 100%;
+    dock: left;
+    background: $surface-darken-1;
+    border-right: solid $primary;
+    padding: 1;
+}
+
+.sidebar-title {
+    text-align: center;
+    text-style: bold;
+    color: $primary;
+    margin-bottom: 1;
+}
+
+.sidebar-user {
+    text-align: center;
+    margin-bottom: 1;
+    color: $text-muted;
+}
+
+.sidebar-menu {
+    height: auto;
+    margin-top: 1;
+}
+
+.sidebar-button {
+    width: 100%;
+    margin-bottom: 1;
+}
+
+.sidebar-button:focus {
+    background: $primary-darken-2;
+}
+
+.main-content {
+    width: 1fr;
+    height: 100%;
+    padding: 1 2;
+}
+
+.content-title {
+    text-style: bold;
+    color: $primary;
+    margin-bottom: 1;
+}
+
+/* Data Tables */
+DataTable {
+    height: 1fr;
+    border: solid $primary-darken-2;
+    background: $surface;
+}
+
+/* Forms */
+.form-container {
+    height: auto;
+    border: solid $primary-darken-2;
+    padding: 1 2;
+    margin-bottom: 1;
+}
+
+.form-title {
+    text-style: bold;
+    margin-bottom: 1;
+}
+
+.form-row {
+    layout: horizontal;
+    height: auto;
+    margin-bottom: 1;
+}
+
+.form-label {
+    width: 15;
+    content-align: right middle;
+    padding-right: 1;
+}
+
+.form-input {
+    width: 1fr;
+}
+
+.form-buttons {
+    layout: horizontal;
+    height: auto;
+    margin-top: 1;
+}
+
+/* Search Bar */
+.search-container {
+    layout: horizontal;
+    height: auto;
+    margin-bottom: 1;
+}
+
+.search-input {
+    width: 1fr;
+}
+
+.search-button {
+    margin-left: 1;
+}
+
+/* Order Creation */
+.order-cart {
+    height: 15;
+    border: solid $primary-darken-2;
+    padding: 1;
+    margin-bottom: 1;
+}
+
+.order-cart-title {
+    text-style: bold;
+    margin-bottom: 1;
+}
+
+.order-total {
+    text-align: right;
+    text-style: bold;
+    color: $success;
+    margin-top: 1;
+}
+
+.product-selector {
+    height: 1fr;
+    border: solid $primary-darken-2;
+}
+
+/* Status indicators */
+.status-pending {
+    color: $warning;
+}
+
+.status-in-progress {
+    color: $primary;
+}
+
+.status-completed {
+    color: $success;
+}
+
+.status-cancelled {
+    color: $error;
+}
+
+/* Dialogs */
+Dialog {
+    align: center middle;
+}
+
+.dialog-container {
+    width: 40;
+    height: auto;
+    border: solid $primary;
+    padding: 1 2;
+    background: $surface;
+}
+
+.dialog-title {
+    text-align: center;
+    text-style: bold;
+    margin-bottom: 1;
+}
+
+.dialog-message {
+    text-align: center;
+    margin-bottom: 1;
+}
+
+.dialog-buttons {
+    layout: horizontal;
+    height: auto;
+    align: center middle;
+}
+
+/* Buttons */
+Button {
+    margin: 0 1;
+}
+
+Button.primary {
+    background: $primary;
+    color: $text;
+}
+
+Button.danger {
+    background: $error;
+    color: $text;
+}
+
+Button.success {
+    background: $success;
+    color: $text;
+}
+
+/* Scrollbars */
+Scrollbar {
+    background: $surface-darken-1;
+}
+
+/* Selection List */
+SelectionList {
+    border: solid $primary-darken-2;
+}
+
+/* Select (Dropdown) */
+Select {
+    width: 1fr;
+}
+
+/* Input */
+Input {
+    width: 1fr;
+}
+
+/* Label */
+Label {
+    height: auto;
+}
+
+/* Static */
+Static {
+    height: auto;
+}

@@ -1,7 +1,7 @@
 # AGENTS.md - Coding Guidelines for ctrlmarket
 
 ## Build & Test Commands
-- `uv run python main.py` - Run the application
+- `uv run main.py` - Run the application
 - `uv add <package>` - Add dependencies
 - `uv sync` - Sync dependencies from lock file
 - `pytest tests/` - Run all tests
