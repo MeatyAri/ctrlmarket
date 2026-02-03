@@ -14,8 +14,10 @@ class DashboardScreen(Screen):
     CSS_PATH = "../css/main.tcss"
 
     BINDINGS = [
-        ("1", "go_workspace", "Workspace"),
-        ("4", "go_profile", "Profile"),
+        ("alt+1", "go_workspace", "Workspace"),
+        ("alt+2", "go_workspace_orders", "Orders"),
+        ("alt+3", "go_workspace_services", "Services"),
+        ("alt+4", "go_profile", "Profile"),
         ("q", "logout", "Logout"),
     ]
 
@@ -41,17 +43,27 @@ class DashboardScreen(Screen):
 
             nav_workspace = self.query_one("#nav-workspace", Label)
             if is_customer:
-                nav_workspace.update(
-                    "\[1] Workspace - Browse products, view orders and services"
-                )
+                nav_workspace.update("\\[Alt+1] Workspace - Browse products")
             elif is_specialist:
-                nav_workspace.update(
-                    "\[1] Workspace - Manage orders and service requests"
-                )
+                nav_workspace.update("\\[Alt+1] Workspace - Manage orders and services")
             else:
-                nav_workspace.update(
-                    "\[1] Workspace - Manage products, orders, and services"
-                )
+                nav_workspace.update("\\[Alt+1] Workspace - Manage products")
+
+            nav_orders = self.query_one("#nav-orders", Label)
+            if is_customer:
+                nav_orders.update("\\[Alt+2] Orders - View your orders")
+            elif is_specialist:
+                nav_orders.update("\\[Alt+2] Orders - Manage orders")
+            else:
+                nav_orders.update("\\[Alt+2] Orders - Manage orders")
+
+            nav_services = self.query_one("#nav-services", Label)
+            if is_customer:
+                nav_services.update("\\[Alt+3] Services - View service requests")
+            elif is_specialist:
+                nav_services.update("\\[Alt+3] Services - Manage service requests")
+            else:
+                nav_services.update("\\[Alt+3] Services - Manage service requests")
 
     def compose(self) -> ComposeResult:
         # Header
@@ -68,16 +80,32 @@ class DashboardScreen(Screen):
                 yield Static("")
                 yield Label("Navigation:", classes="content-title")
                 yield Label(
-                    "\[1] Workspace - Browse products, view orders and services",
+                    "\\[Alt+1] Workspace - Manage products",
                     id="nav-workspace",
                 )
-                yield Label("\[4] Profile - View your profile and logout")
+                yield Label("\\[Alt+2] Orders - Manage orders", id="nav-orders")
+                yield Label("\\[Alt+3] Services - Manage services", id="nav-services")
+                yield Label("\\[Alt+4] Profile - View your profile and logout")
                 yield Static("")
-                yield Label("Press \[q] to logout", classes="nav-hint")
+                yield Label("Press \\[q] to logout", classes="nav-hint")
 
     def action_go_workspace(self) -> None:
         """Navigate to workspace."""
-        self.app.push_screen("workspace")
+        from tui.screens.workspace import WorkspaceScreen
+
+        self.app.push_screen(WorkspaceScreen(initial_tab="products"))
+
+    def action_go_workspace_orders(self) -> None:
+        """Navigate to workspace with orders tab."""
+        from tui.screens.workspace import WorkspaceScreen
+
+        self.app.push_screen(WorkspaceScreen(initial_tab="orders"))
+
+    def action_go_workspace_services(self) -> None:
+        """Navigate to workspace with services tab."""
+        from tui.screens.workspace import WorkspaceScreen
+
+        self.app.push_screen(WorkspaceScreen(initial_tab="services"))
 
     def action_go_profile(self) -> None:
         """Navigate to profile."""
@@ -85,7 +113,4 @@ class DashboardScreen(Screen):
 
     def action_logout(self) -> None:
         """Logout and return to login screen."""
-        self.app.current_user = None
-        while len(self.app.screen_stack) > 1:
-            self.app.pop_screen()
-        self.app.switch_screen("login")
+        self.app.logout()

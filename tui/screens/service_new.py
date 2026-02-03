@@ -70,7 +70,7 @@ class ServiceNewScreen(Screen):
 
             # Shortcuts bar
             shortcuts_bar = ShortcutsBar(id="shortcuts-bar", classes="shortcuts-bar")
-            shortcuts_bar.shortcuts = "\[Esc]Back \[ctrl+enter]Submit"
+            shortcuts_bar.shortcuts = "\\[Esc]Back \\[ctrl+enter]Submit"
             yield shortcuts_bar
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
@@ -139,6 +139,4 @@ class ServiceNewScreen(Screen):
 
     def action_logout(self) -> None:
         """Logout and return to login screen."""
-        self.app.current_user = None
-        while len(self.app.screen_stack) > 1:
-            self.app.pop_screen()
+        self.app.logout()

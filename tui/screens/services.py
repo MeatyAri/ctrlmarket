@@ -3,7 +3,7 @@
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal
 from textual.screen import Screen
-from textual.widgets import Button, DataTable, Label, Select, Static
+from textual.widgets import Button, DataTable, Input, Label, Select, Static
 
 from database.queries import (
     assign_specialist,
@@ -47,7 +47,12 @@ class ServicesScreen(Screen):
             yield Label("Service Requests", classes="content-title")
 
             # Filter
-            with Horizontal():
+            with Horizontal(classes="search-container"):
+                yield Input(
+                    placeholder="Search by customer name or service type...",
+                    id="search-input",
+                    classes="search-input",
+                )
                 yield Label("Filter:", classes="form-label")
                 yield Select(
                     [
@@ -60,6 +65,7 @@ class ServicesScreen(Screen):
                     id="status-filter",
                     value="",
                 )
+                yield Button("Search", id="btn-search", classes="search-button")
 
             # Requests table
             table = DataTable(id="requests-table")
@@ -90,7 +96,7 @@ class ServicesScreen(Screen):
             # Specialists can manage requests but not create new ones
             self.query_one("#btn-new", Button).display = False
 
-    def _load_requests(self, status: str = "") -> None:
+    def _load_requests(self, status: str = "", search: str = "") -> None:
         """Load service requests based on user role."""
         table = self.query_one("#requests-table", DataTable)
         table.clear()
@@ -103,7 +109,9 @@ class ServicesScreen(Screen):
             if current_user.role == "Customer":
                 # Customers only see their own requests
                 self.requests = list_service_requests(
-                    status=status_filter, customer_id=current_user.user_id
+                    status=status_filter,
+                    customer_id=current_user.user_id,
+                    search=search if search else None,
                 )
             elif current_user.role == "Specialist":
                 # Specialists see unassigned and their assigned requests
@@ -117,7 +125,9 @@ class ServicesScreen(Screen):
                     ]
             else:
                 # Admins see all requests
-                self.requests = list_service_requests(status=status_filter)
+                self.requests = list_service_requests(
+                    status=status_filter, search=search if search else None
+                )
         else:
             self.requests = []
 
@@ -144,6 +154,13 @@ class ServicesScreen(Screen):
             status = str(value) if value != Select.BLANK else ""
             self._load_requests(status=status)
 
+    def _handle_search(self) -> None:
+        """Apply search filter."""
+        search = self.query_one("#search-input", Input).value
+        status_filter = self.query_one("#status-filter", Select)
+        status = str(status_filter.value) if status_filter.value != Select.BLANK else ""
+        self._load_requests(status=status, search=search)
+
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button presses."""
         btn_id = event.button.id
@@ -160,6 +177,8 @@ class ServicesScreen(Screen):
             self._handle_complete()
         elif btn_id == "btn-cancel":
             self._handle_cancel()
+        elif btn_id == "btn-search":
+            self._handle_search()
 
     def _handle_assign(self) -> None:
         """Assign request to current user (specialist)."""
@@ -215,10 +234,7 @@ class ServicesScreen(Screen):
 
     def action_logout(self) -> None:
         """Logout and return to login screen."""
-        self.app.current_user = None
-        while len(self.app.screen_stack) > 1:
-            self.app.pop_screen()
-        self.app.switch_screen("login")
+        self.app.logout()
 
     def action_new_request(self) -> None:
         """Open new request dialog."""

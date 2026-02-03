@@ -75,7 +75,7 @@ class OrderNewScreen(Screen):
             # Shortcuts bar
             shortcuts_bar = ShortcutsBar(id="shortcuts-bar", classes="shortcuts-bar")
             shortcuts_bar.shortcuts = (
-                "\[Esc]Back \[a]Add to Cart \[r]Remove Last \[ctrl+enter]Submit"
+                "\\[Esc]Back \\[a]Add to Cart \\[r]Remove Last \\[ctrl+enter]Submit"
             )
             yield shortcuts_bar
 
@@ -202,6 +202,4 @@ class OrderNewScreen(Screen):
 
     def action_logout(self) -> None:
         """Logout and return to login screen."""
-        self.app.current_user = None
-        while len(self.app.screen_stack) > 1:
-            self.app.pop_screen()
+        self.app.logout()

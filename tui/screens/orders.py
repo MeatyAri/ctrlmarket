@@ -3,7 +3,7 @@
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal
 from textual.screen import Screen
-from textual.widgets import Button, DataTable, Label, Select, Static
+from textual.widgets import Button, DataTable, Input, Label, Select, Static
 
 from database.queries import (
     cancel_order,
@@ -48,6 +48,11 @@ class OrdersScreen(Screen):
 
             # Status filter
             with Horizontal(classes="search-container"):
+                yield Input(
+                    placeholder="Search by customer name or order ID...",
+                    id="search-input",
+                    classes="search-input",
+                )
                 yield Select(
                     [
                         ("All Statuses", None),
@@ -58,7 +63,7 @@ class OrdersScreen(Screen):
                     value=None,
                     id="status-filter",
                 )
-                yield Button("Filter", id="btn-filter", classes="search-button")
+                yield Button("Search", id="btn-search", classes="search-button")
 
             # Orders table
             table = DataTable(id="orders-table")
@@ -94,7 +99,7 @@ class OrdersScreen(Screen):
             # Admins have full access - all buttons visible
             pass
 
-    def _load_orders(self) -> None:
+    def _load_orders(self, search: str = "") -> None:
         """Load orders into table."""
         table = self.query_one("#orders-table", DataTable)
         table.clear()
@@ -110,6 +115,7 @@ class OrdersScreen(Screen):
         self.orders = list_orders(
             user_id=user_id,
             status=self.current_status_filter,
+            search=search if search else None,
         )
 
         for order in self.orders:
@@ -146,6 +152,8 @@ class OrdersScreen(Screen):
             self._handle_complete()
         elif btn_id == "btn-filter":
             self._handle_filter()
+        elif btn_id == "btn-search":
+            self._handle_search()
 
     def _handle_filter(self) -> None:
         """Apply status filter."""
@@ -157,6 +165,11 @@ class OrdersScreen(Screen):
         else:
             self.current_status_filter = str(selected_value) if selected_value else None
         self._load_orders()
+
+    def _handle_search(self) -> None:
+        """Apply search filter."""
+        search = self.query_one("#search-input", Input).value
+        self._load_orders(search=search)
 
     def _handle_view(self) -> None:
         """View order details."""
@@ -212,10 +225,7 @@ class OrdersScreen(Screen):
 
     def action_logout(self) -> None:
         """Logout and return to login screen."""
-        self.app.current_user = None
-        while len(self.app.screen_stack) > 1:
-            self.app.pop_screen()
-        self.app.switch_screen("login")
+        self.app.logout()
 
     def action_new_order(self) -> None:
         """Open new order screen."""

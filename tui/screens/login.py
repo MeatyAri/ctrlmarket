@@ -53,7 +53,7 @@ class LoginScreen(Screen):
                 )
                 yield Static("")
                 yield Label(
-                    "Don't have an account? Press \[Alt+2] to sign up",
+                    "Don't have an account? Press \\[Alt+2] to sign up",
                     classes="login-title",
                 )
                 self.error_label = Label("", classes="login-error")
@@ -61,7 +61,7 @@ class LoginScreen(Screen):
 
         # Shortcuts bar
         shortcuts_bar = ShortcutsBar(id="shortcuts-bar", classes="shortcuts-bar")
-        shortcuts_bar.shortcuts = "\[Enter]Login \[Alt+2]Sign Up"
+        shortcuts_bar.shortcuts = "\\[Enter]Login \\[Alt+2]Sign Up"
         yield shortcuts_bar
 
     def action_login(self) -> None:
@@ -112,3 +112,10 @@ class LoginScreen(Screen):
     def on_input_submitted(self, event: Input.Submitted) -> None:
         """Handle Enter key in any input field."""
         self.action_login()
+
+    def on_screen_resume(self) -> None:
+        """Clear inputs and error when screen is resumed."""
+        self.query_one("#email", Input).value = ""
+        self.query_one("#password", Input).value = ""
+        if self.error_label:
+            self.error_label.update("")

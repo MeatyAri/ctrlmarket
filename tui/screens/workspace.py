@@ -21,6 +21,7 @@ from database.queries import (
     delete_product,
     get_order_by_id,
     get_product_by_id,
+    get_service_request_by_id,
     list_orders,
     list_product_categories,
     list_products,
@@ -84,10 +85,10 @@ class WorkspaceScreen(Screen):
     CSS_PATH = "../css/main.tcss"
 
     BINDINGS = [
-        ("1", "switch_tab('products')", "Products"),
-        ("2", "switch_tab('orders')", "Orders"),
-        ("3", "switch_tab('services')", "Services"),
-        ("4", "go_profile", "Profile"),
+        ("alt+1", "switch_tab('products')", "Products"),
+        ("alt+2", "switch_tab('orders')", "Orders"),
+        ("alt+3", "switch_tab('services')", "Services"),
+        ("alt+4", "go_profile", "Profile"),
         ("escape", "go_back", "Back"),
         ("q", "logout", "Logout"),
         ("n", "new_item", "New"),
@@ -96,11 +97,12 @@ class WorkspaceScreen(Screen):
         ("r", "refresh", "Refresh"),
         ("enter", "select_item", "Select/View"),
         ("c", "cancel_complete", "Cancel/Complete"),
+        ("a", "assign_request", "Assign"),
         ("ctrl+s", "focus_search", "Focus Search"),
         ("/", "focus_search", "Focus Search"),
     ]
 
-    def __init__(self) -> None:
+    def __init__(self, initial_tab: str = "products") -> None:
         self.products: list = []
         self.orders: list = []
         self.requests: list = []
@@ -109,6 +111,7 @@ class WorkspaceScreen(Screen):
         self.selected_order_id: int | None = None
         self.selected_request_id: int | None = None
         self.current_status_filter: str | None = None
+        self._initial_tab = initial_tab
         super().__init__()
 
     def compose(self) -> ComposeResult:
@@ -117,8 +120,8 @@ class WorkspaceScreen(Screen):
                 yield Label("CTRL Market - Workspace", classes="workspace-title")
 
             with Container(classes="workspace-content"):
-                with TabbedContent(initial="products"):
-                    with TabPane("Products \[1]", id="products"):
+                with TabbedContent(initial=self._initial_tab):
+                    with TabPane("Products \\[1]", id="products"):
                         with Container(classes="tab-pane-container"):
                             with Container(classes="search-container"):
                                 yield Input(
@@ -137,9 +140,14 @@ class WorkspaceScreen(Screen):
                             table.cursor_type = "row"
                             yield table
 
-                    with TabPane("Orders \[2]", id="orders"):
+                    with TabPane("Orders \\[2]", id="orders"):
                         with Container(classes="tab-pane-container"):
                             with Container(classes="search-container"):
+                                yield Input(
+                                    placeholder="Search by customer name or order ID...",
+                                    id="orders-search",
+                                    classes="search-input",
+                                )
                                 yield Select(
                                     [
                                         ("All Statuses", None),
@@ -159,9 +167,14 @@ class WorkspaceScreen(Screen):
                             table.cursor_type = "row"
                             yield table
 
-                    with TabPane("Services \[3]", id="services"):
+                    with TabPane("Services \\[3]", id="services"):
                         with Container(classes="tab-pane-container"):
                             with Container(classes="search-container"):
+                                yield Input(
+                                    placeholder="Search by customer name or service type...",
+                                    id="services-search",
+                                    classes="search-input",
+                                )
                                 yield Select(
                                     [
                                         ("All Statuses", ""),
@@ -202,15 +215,6 @@ class WorkspaceScreen(Screen):
         is_customer = current_user.role == "Customer"
         is_specialist = current_user.role == "Specialist"
 
-        # Hide search/filter for customers on products
-        if is_customer:
-            products_search = self.query_one("#products-search", Input)
-            products_category = self.query_one("#products-category", Select)
-            if products_search:
-                products_search.display = False
-            if products_category:
-                products_category.display = False
-
     def _update_shortcuts(self) -> None:
         """Update shortcuts bar based on current tab and role."""
         current_user = getattr(self.app, "current_user", None)
@@ -222,27 +226,29 @@ class WorkspaceScreen(Screen):
         active_tab = tabbed.active
 
         shortcuts = []
-        shortcuts.append("\[1]Products \[2]Orders \[3]Services \[4]Profile")
-        shortcuts.append("\[Esc]Back \[/]Search \[Enter]Select")
+        shortcuts.append(
+            "\\[Alt+1]Products \\[Alt+2]Orders \\[Alt+3]Services \\[Alt+4]Profile"
+        )
+        shortcuts.append("\\[Esc]Back \\[/]Search \\[Enter]Select")
 
         if active_tab == "products":
             if not is_customer:
-                shortcuts.append("\[n]New \[e]Edit \[d]Delete")
-            shortcuts.append("\[r]Refresh")
+                shortcuts.append("\\[n]New \\[e]Edit \\[d]Delete")
+            shortcuts.append("\\[r]Refresh")
         elif active_tab == "orders":
             if not is_specialist:
-                shortcuts.append("\[n]New")
+                shortcuts.append("\\[n]New")
             if not is_customer:
-                shortcuts.append("\[c]Complete")
+                shortcuts.append("\\[c]Complete")
             if not is_specialist:
-                shortcuts.append("\[c]Cancel")
-            shortcuts.append("\[r]Refresh")
+                shortcuts.append("\\[c]Cancel")
+            shortcuts.append("\\[r]Refresh")
         elif active_tab == "services":
             if not is_specialist:
-                shortcuts.append("\[n]New")
+                shortcuts.append("\\[n]New")
             if not is_customer:
-                shortcuts.append("\[c]Complete \[a]Assign")
-            shortcuts.append("\[r]Refresh")
+                shortcuts.append("\\[c]Complete \\[a]Assign")
+            shortcuts.append("\\[r]Refresh")
 
         shortcuts_bar = self.query_one("#shortcuts-bar", ShortcutsBar)
         shortcuts_bar.shortcuts = "  |  ".join(shortcuts)
@@ -271,7 +277,7 @@ class WorkspaceScreen(Screen):
                 f"${product.price:.2f}",
             )
 
-    def _load_orders(self) -> None:
+    def _load_orders(self, search: str = "") -> None:
         """Load orders into table."""
         table = self.query_one("#orders-table", DataTable)
         table.clear()
@@ -284,6 +290,7 @@ class WorkspaceScreen(Screen):
         self.orders = list_orders(
             user_id=user_id,
             status=self.current_status_filter,
+            search=search if search else None,
         )
 
         for order in self.orders:
@@ -297,7 +304,7 @@ class WorkspaceScreen(Screen):
                 order.status,
             )
 
-    def _load_requests(self, status: str = "") -> None:
+    def _load_requests(self, status: str = "", search: str = "") -> None:
         """Load service requests based on user role."""
         table = self.query_one("#services-table", DataTable)
         table.clear()
@@ -308,7 +315,9 @@ class WorkspaceScreen(Screen):
         if current_user:
             if current_user.role == "Customer":
                 self.requests = list_service_requests(
-                    status=status_filter, customer_id=current_user.user_id
+                    status=status_filter,
+                    customer_id=current_user.user_id,
+                    search=search if search else None,
                 )
             elif current_user.role == "Specialist":
                 self.requests = list_service_requests_for_specialist(
@@ -319,7 +328,9 @@ class WorkspaceScreen(Screen):
                         r for r in self.requests if r.status == status_filter
                     ]
             else:
-                self.requests = list_service_requests(status=status_filter)
+                self.requests = list_service_requests(
+                    status=status_filter, search=search if search else None
+                )
         else:
             self.requests = []
 
@@ -361,6 +372,16 @@ class WorkspaceScreen(Screen):
                 else ""
             )
             self._load_products(search=search, category=category)
+        elif event.input.id == "orders-search":
+            search = event.value
+            self._load_orders(search=search)
+        elif event.input.id == "services-search":
+            search = event.value
+            status_select = self.query_one("#services-status", Select)
+            status = (
+                str(status_select.value) if status_select.value != Select.BLANK else ""
+            )
+            self._load_requests(status=status, search=search)
 
     def on_select_changed(self, event: Select.Changed) -> None:
         """Handle filter changes."""
@@ -389,10 +410,7 @@ class WorkspaceScreen(Screen):
 
     def action_logout(self) -> None:
         """Logout and return to login screen."""
-        self.app.current_user = None
-        while len(self.app.screen_stack) > 1:
-            self.app.pop_screen()
-        self.app.switch_screen("login")
+        self.app.logout()
 
     def action_go_profile(self) -> None:
         """Go to profile screen."""
@@ -407,11 +425,11 @@ class WorkspaceScreen(Screen):
             search_input = self.query_one("#products-search", Input)
             search_input.focus()
         elif active_tab == "orders":
-            status_select = self.query_one("#orders-status", Select)
-            status_select.focus()
+            search_input = self.query_one("#orders-search", Input)
+            search_input.focus()
         elif active_tab == "services":
-            status_select = self.query_one("#services-status", Select)
-            status_select.focus()
+            search_input = self.query_one("#services-search", Input)
+            search_input.focus()
 
     def action_new_item(self) -> None:
         """Create new item based on current tab."""
@@ -535,19 +553,54 @@ class WorkspaceScreen(Screen):
                 self._load_orders()
                 self.selected_order_id = None
 
-    def _handle_service_cancel_complete(self, current_user) -> None:
+    def _handle_service_cancel_complete(
+        self, current_user, cancel: bool = False
+    ) -> None:
         """Handle cancel/complete for services."""
         request_id = self.selected_request_id
         if request_id is None:
+            self.notify("No service request selected", severity="error")
             return
 
         if current_user.role not in ("Specialist", "Admin"):
+            self.notify("Permission denied", severity="error")
             return
 
-        update_service_request_status(
-            request_id, ServiceRequestUpdateStatus(status="Completed")
-        )
+        request = get_service_request_by_id(request_id)
+        if not request:
+            self.notify("Service request not found", severity="error")
+            return
+
+        if cancel:
+            if request.status not in ("Pending", "In Progress"):
+                self.notify(
+                    "Can only cancel Pending or In Progress requests", severity="error"
+                )
+                return
+            success = update_service_request_status(
+                request_id, ServiceRequestUpdateStatus(status="Cancelled")
+            )
+            if success:
+                self.notify("Service request cancelled", severity="information")
+            else:
+                self.notify("Failed to cancel service request", severity="error")
+        else:
+            if request.status not in ("Pending", "In Progress"):
+                self.notify(
+                    "Can only complete Pending or In Progress requests",
+                    severity="error",
+                )
+                return
+            success = update_service_request_status(
+                request_id, ServiceRequestUpdateStatus(status="Completed")
+            )
+            if success:
+                self.notify("Service request completed", severity="information")
+            else:
+                self.notify("Failed to complete service request", severity="error")
+
         self._load_requests()
+        self.selected_request_id = None
 
     def action_assign_request(self) -> None:
         """Assign service request to current specialist."""

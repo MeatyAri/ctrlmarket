@@ -46,7 +46,7 @@ class ProfileSection(Container):
             yield Label("Role:", classes="profile-label")
             yield Label("", id="profile-role", classes="profile-value")
         yield Static("")
-        yield Label("Press \[q] to logout", classes="nav-hint")
+        yield Label("Press \\[q] to logout", classes="nav-hint")
 
 
 class UsersSection(Container):
@@ -85,8 +85,8 @@ class ProfileScreen(Screen):
     CSS_PATH = "../css/main.tcss"
 
     BINDINGS = [
-        ("1", "switch_tab('profile')", "Profile"),
-        ("2", "switch_tab('users')", "Users"),
+        ("alt+1", "switch_tab('profile')", "Profile"),
+        ("alt+2", "switch_tab('users')", "Users"),
         ("escape", "go_back", "Back"),
         ("q", "logout", "Logout"),
         ("n", "new_user", "New User"),
@@ -113,10 +113,10 @@ class ProfileScreen(Screen):
 
                 if is_admin:
                     with TabbedContent(initial="profile"):
-                        with TabPane("My Profile \[1]", id="profile"):
+                        with TabPane("My Profile \\[1]", id="profile"):
                             yield ProfileSection(classes="profile-container")
 
-                        with TabPane("Users \[2]", id="users"):
+                        with TabPane("Users \\[2]", id="users"):
                             yield UsersSection(classes="users-section")
                 else:
                     yield ProfileSection(classes="profile-container")
@@ -126,7 +126,19 @@ class ProfileScreen(Screen):
     def on_mount(self) -> None:
         """Load data when screen mounts."""
         self._load_profile()
-        self._load_users()
+        current_user = getattr(self.app, "current_user", None)
+        is_admin = current_user and current_user.role == "Admin"
+        if is_admin:
+            self._load_users()
+        self._update_shortcuts()
+
+    def on_screen_resume(self) -> None:
+        """Reload profile data when screen is resumed (e.g., after login/logout)."""
+        self._load_profile()
+        current_user = getattr(self.app, "current_user", None)
+        is_admin = current_user and current_user.role == "Admin"
+        if is_admin:
+            self._load_users()
         self._update_shortcuts()
 
     def _load_profile(self) -> None:
@@ -163,18 +175,18 @@ class ProfileScreen(Screen):
         shortcuts = []
 
         if is_admin:
-            shortcuts.append("\[1]Profile \[2]Users")
-        shortcuts.append("\[Esc]Back \[q]Logout \[/]Search")
+            shortcuts.append("\\[Alt+1]Profile \\[Alt+2]Users")
+        shortcuts.append("\\[Esc]Back \\[q]Logout")
 
         if is_admin:
             # Check if on users tab
             try:
                 tabbed = self.query_one(TabbedContent)
                 if tabbed.active == "users":
-                    shortcuts.append("\[n]New \[e]Edit \[d]Delete")
+                    shortcuts.append("\\[n]New \\[e]Edit \\[d]Delete \\[/]Search")
             except:
                 pass
-            shortcuts.append("\[r]Refresh")
+            shortcuts.append("\\[r]Refresh")
 
         shortcuts_bar = self.query_one("#shortcuts-bar", ShortcutsBar)
         shortcuts_bar.shortcuts = "  |  ".join(shortcuts)
@@ -221,10 +233,7 @@ class ProfileScreen(Screen):
 
     def action_logout(self) -> None:
         """Logout and return to login screen."""
-        self.app.current_user = None
-        while len(self.app.screen_stack) > 1:
-            self.app.pop_screen()
-        self.app.switch_screen("login")
+        self.app.logout()
 
     def action_focus_search(self) -> None:
         """Focus the search input."""
@@ -275,4 +284,7 @@ class ProfileScreen(Screen):
     def action_refresh(self) -> None:
         """Refresh data."""
         self._load_profile()
-        self._load_users()
+        current_user = getattr(self.app, "current_user", None)
+        is_admin = current_user and current_user.role == "Admin"
+        if is_admin:
+            self._load_users()

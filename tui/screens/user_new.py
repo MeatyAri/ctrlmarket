@@ -74,7 +74,7 @@ class UserNewScreen(Screen):
 
         # Shortcuts bar
         shortcuts_bar = ShortcutsBar(id="shortcuts-bar", classes="shortcuts-bar")
-        shortcuts_bar.shortcuts = "\[Esc]Back \[c]Create User"
+        shortcuts_bar.shortcuts = "\\[Esc]Back \\[c]Create User"
         yield shortcuts_bar
 
     def action_create_user(self) -> None:
@@ -113,7 +113,4 @@ class UserNewScreen(Screen):
 
     def action_logout(self) -> None:
         """Logout and return to login screen."""
-        self.app.current_user = None
-        while len(self.app.screen_stack) > 1:
-            self.app.pop_screen()
-        self.app.switch_screen("login")
+        self.app.logout()

@@ -38,10 +38,13 @@ class CtrlMarketApp(App):
 
     def on_mount(self) -> None:
         """Initialize database and show login screen."""
-        # Initialize database with schema and seed data
         init_database()
+        self.push_screen("login")
 
-        # Push login screen
+    def logout(self) -> None:
+        """Logout the current user and return to login screen."""
+        self.current_user = None
+        self._screen_stack.clear()
         self.push_screen("login")
 
 

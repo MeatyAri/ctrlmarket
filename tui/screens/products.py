@@ -78,8 +78,6 @@ class ProductsScreen(Screen):
             self.query_one("#btn-new", Button).display = False
             self.query_one("#btn-edit", Button).display = False
             self.query_one("#btn-delete", Button).display = False
-            # Hide search for customers too (they can just browse)
-            self.query_one(".search-container", Container).display = False
 
     def _load_categories(self) -> None:
         """Load product categories for dropdown."""
@@ -170,10 +168,7 @@ class ProductsScreen(Screen):
 
     def action_logout(self) -> None:
         """Logout and return to login screen."""
-        self.app.current_user = None
-        while len(self.app.screen_stack) > 1:
-            self.app.pop_screen()
-        self.app.switch_screen("login")
+        self.app.logout()
 
     def action_new_product(self) -> None:
         """Open new product dialog."""

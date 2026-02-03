@@ -84,7 +84,7 @@ class SignupScreen(Screen):
 
                 yield Static("")
                 yield Label(
-                    "Press \[Enter] to sign up, \[Alt+1] to go back",
+                    "Press \\[Enter] to sign up, \\[Alt+1] to go back",
                     classes="login-title",
                 )
                 self.error_label = Label("", classes="login-error")
@@ -92,7 +92,7 @@ class SignupScreen(Screen):
 
         # Shortcuts bar
         shortcuts_bar = ShortcutsBar(id="shortcuts-bar", classes="shortcuts-bar")
-        shortcuts_bar.shortcuts = "\\[Enter\\]Sign Up \\[Alt+1\\]Back to Login"
+        shortcuts_bar.shortcuts = "\\[Enter]Sign Up \\[Alt+1]Back to Login"
         yield shortcuts_bar
 
     def action_signup(self) -> None:
