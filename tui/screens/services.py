@@ -22,6 +22,7 @@ class ServicesScreen(Screen):
     BINDINGS = [
         ("escape", "go_back", "Back"),
         ("n", "new_request", "New Request"),
+        ("q", "logout", "Logout"),
     ]
 
     def __init__(self) -> None:
@@ -211,6 +212,13 @@ class ServicesScreen(Screen):
     def action_go_back(self) -> None:
         """Go back to dashboard."""
         self.app.pop_screen()
+
+    def action_logout(self) -> None:
+        """Logout and return to login screen."""
+        self.app.current_user = None
+        while len(self.app.screen_stack) > 1:
+            self.app.pop_screen()
+        self.app.switch_screen("login")
 
     def action_new_request(self) -> None:
         """Open new request dialog."""

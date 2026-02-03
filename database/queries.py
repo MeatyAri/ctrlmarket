@@ -86,9 +86,16 @@ def create_user(user: UserCreate, password_hash: str) -> User:
         )
 
 
-def get_user_by_id(user_id: int) -> Optional[User]:
+def get_user_by_id(
+    user_id: int, conn: Optional[sqlite3.Connection] = None
+) -> Optional[User]:
     """Get user by ID."""
-    with get_db_connection() as conn:
+    if conn is None:
+        with get_db_connection() as conn:
+            cursor = conn.execute("SELECT * FROM User WHERE user_id = ?", (user_id,))
+            row = cursor.fetchone()
+            return User(**dict(row)) if row else None
+    else:
         cursor = conn.execute("SELECT * FROM User WHERE user_id = ?", (user_id,))
         row = cursor.fetchone()
         return User(**dict(row)) if row else None
@@ -148,7 +155,7 @@ def update_user(user_id: int, user: UserUpdate) -> Optional[User]:
             params.append(user.password)
 
         if not fields:
-            return get_user_by_id(user_id)
+            return get_user_by_id(user_id, conn)
 
         query = f"UPDATE User SET {', '.join(fields)} WHERE user_id = ?"
         params.append(user_id)
@@ -157,7 +164,7 @@ def update_user(user_id: int, user: UserUpdate) -> Optional[User]:
         if cursor.rowcount == 0:
             return None
 
-        return get_user_by_id(user_id)
+        return get_user_by_id(user_id, conn)
 
 
 def delete_user(user_id: int) -> bool:
@@ -200,14 +207,23 @@ def create_product(product: ProductCreate) -> Product:
         )
 
 
-def get_product_by_id(product_id: int) -> Optional[Product]:
+def get_product_by_id(
+    product_id: int, conn: Optional[sqlite3.Connection] = None
+) -> Optional[Product]:
     """Get product by ID."""
-    with get_db_connection() as conn:
-        cursor = conn.execute(
+
+    def _fetch_product(connection: sqlite3.Connection) -> Optional[Product]:
+        cursor = connection.execute(
             "SELECT * FROM Product WHERE product_id = ?", (product_id,)
         )
         row = cursor.fetchone()
         return Product(**dict(row)) if row else None
+
+    if conn is None:
+        with get_db_connection() as conn:
+            return _fetch_product(conn)
+    else:
+        return _fetch_product(conn)
 
 
 def list_products(
@@ -257,7 +273,7 @@ def update_product(product_id: int, product: ProductUpdate) -> Optional[Product]
             params.append(product.price)
 
         if not fields:
-            return get_product_by_id(product_id)
+            return get_product_by_id(product_id, conn)
 
         query = f"UPDATE Product SET {', '.join(fields)} WHERE product_id = ?"
         params.append(product_id)
@@ -266,7 +282,7 @@ def update_product(product_id: int, product: ProductUpdate) -> Optional[Product]
         if cursor.rowcount == 0:
             return None
 
-        return get_product_by_id(product_id)
+        return get_product_by_id(product_id, conn)
 
 
 def delete_product(product_id: int) -> bool:
@@ -285,7 +301,7 @@ def delete_product(product_id: int) -> bool:
 # =============================================================================
 # Order Queries
 # =============================================================================
-def create_order(order_data: OrderCreate) -> OrderWithItems:
+def create_order(order_data: OrderCreate) -> Optional[OrderWithItems]:
     """Create a new order with multiple items."""
     with get_db_connection() as conn:
         # Calculate total price from items
@@ -293,7 +309,7 @@ def create_order(order_data: OrderCreate) -> OrderWithItems:
         order_items_data = []
 
         for item in order_data.items:
-            product = get_product_by_id(item.product_id)
+            product = get_product_by_id(item.product_id, conn)
             if not product:
                 raise ValueError(f"Product {item.product_id} not found")
 
@@ -317,6 +333,9 @@ def create_order(order_data: OrderCreate) -> OrderWithItems:
         )
         order_id = cursor.lastrowid
 
+        if order_id is None:
+            return None
+
         # Insert order items
         for item_data in order_items_data:
             conn.execute(
@@ -332,14 +351,17 @@ def create_order(order_data: OrderCreate) -> OrderWithItems:
                 ),
             )
 
-        return get_order_by_id(order_id)
+        return get_order_by_id(order_id, conn)
 
 
-def get_order_by_id(order_id: int) -> Optional[OrderWithItems]:
+def get_order_by_id(
+    order_id: int, conn: Optional[sqlite3.Connection] = None
+) -> Optional[OrderWithItems]:
     """Get order by ID with items."""
-    with get_db_connection() as conn:
+
+    def _fetch_order(connection: sqlite3.Connection) -> Optional[OrderWithItems]:
         # Get order details
-        cursor = conn.execute(
+        cursor = connection.execute(
             """
             SELECT o.*, u.name as customer_name
             FROM "Order" o
@@ -353,7 +375,7 @@ def get_order_by_id(order_id: int) -> Optional[OrderWithItems]:
             return None
 
         # Get order items with product details
-        items_cursor = conn.execute(
+        items_cursor = connection.execute(
             """
             SELECT oi.*, p.name as product_name, p.category as product_category
             FROM OrderItem oi
@@ -384,6 +406,12 @@ def get_order_by_id(order_id: int) -> Optional[OrderWithItems]:
             customer_name=row["customer_name"],
             items=items,
         )
+
+    if conn is None:
+        with get_db_connection() as conn:
+            return _fetch_order(conn)
+    else:
+        return _fetch_order(conn)
 
 
 def list_orders(
@@ -470,7 +498,7 @@ def update_order_status(
         if cursor.rowcount == 0:
             return None
 
-        return get_order_by_id(order_id)
+        return get_order_by_id(order_id, conn)
 
 
 def cancel_order(order_id: int) -> bool:
@@ -508,10 +536,15 @@ def create_service_request(request: ServiceRequestCreate) -> ServiceRequest:
         )
 
 
-def get_service_request_by_id(request_id: int) -> Optional[ServiceRequestWithDetails]:
+def get_service_request_by_id(
+    request_id: int, conn: Optional[sqlite3.Connection] = None
+) -> Optional[ServiceRequestWithDetails]:
     """Get service request by ID with details."""
-    with get_db_connection() as conn:
-        cursor = conn.execute(
+
+    def _fetch_request(
+        connection: sqlite3.Connection,
+    ) -> Optional[ServiceRequestWithDetails]:
+        cursor = connection.execute(
             """
             SELECT 
                 sr.*,
@@ -539,6 +572,12 @@ def get_service_request_by_id(request_id: int) -> Optional[ServiceRequestWithDet
             customer_name=row["customer_name"],
             specialist_name=row["specialist_name"],
         )
+
+    if conn is None:
+        with get_db_connection() as conn:
+            return _fetch_request(conn)
+    else:
+        return _fetch_request(conn)
 
 
 def list_service_requests(
@@ -612,7 +651,7 @@ def update_service_request_status(
         if cursor.rowcount == 0:
             return None
 
-        return get_service_request_by_id(request_id)
+        return get_service_request_by_id(request_id, conn)
 
 
 def assign_specialist(
@@ -631,7 +670,7 @@ def assign_specialist(
         if cursor.rowcount == 0:
             return None
 
-        return get_service_request_by_id(request_id)
+        return get_service_request_by_id(request_id, conn)
 
 
 def delete_service_request(request_id: int) -> bool:

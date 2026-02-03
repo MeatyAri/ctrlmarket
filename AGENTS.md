@@ -4,8 +4,8 @@
 - `uv run main.py` - Run the application
 - `uv add <package>` - Add dependencies
 - `uv sync` - Sync dependencies from lock file
-- `pytest tests/` - Run all tests
-- `pytest tests/test_file.py::test_function` - Run single test
+- `uv run pytest tests/` - Run all tests
+- `uv run pytest tests/test_file.py::test_function` - Run single test
 - `ruff check .` - Lint code
 - `ruff format .` - Format code
 
@@ -23,3 +23,9 @@
 Smart Equipment Sales & Services TUI app with SQLite backend.
 Entities: User (Customer/Specialist/Admin), Product, Order, OrderItem, ServiceRequest.
 All database operations must use raw SQL with proper foreign key constraints.
+
+## Output Handling
+- When running commands that generate significant output (tests, builds, etc.), always use `tail` to capture the last 50-100 lines for analysis and reporting
+
+## Output Handling
+- When running commands that generate significant output (tests, builds, etc.), always use `tail` to capture the last 50-100 lines for analysis and reporting

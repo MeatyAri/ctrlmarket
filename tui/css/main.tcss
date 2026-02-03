@@ -1,21 +1,28 @@
-/* Main Application Styles */
+/* Main Application Styles - Bordered Layout Design */
 
 Screen {
-    layout: grid;
-    grid-size: 1;
+    layout: vertical;
     padding: 0;
 }
+
+/* Remove all background colors - clean bordered design */
 
 /* Login Screen */
 LoginScreen {
     align: center middle;
-    background: $surface-darken-1;
+}
+
+LoginScreen > .workspace-content {
+    align: center middle;
 }
 
 /* Signup Screen */
 SignupScreen {
     align: center middle;
-    background: $surface-darken-1;
+}
+
+SignupScreen > .workspace-content {
+    align: center middle;
 }
 
 .login-container {
@@ -23,7 +30,6 @@ SignupScreen {
     height: auto;
     border: solid $primary;
     padding: 2 4;
-    background: $surface;
 }
 
 .login-title {
@@ -41,74 +47,184 @@ SignupScreen {
 
 /* Dashboard Layout */
 DashboardScreen {
-    layout: horizontal;
+    layout: vertical;
 }
 
-.sidebar {
-    width: 20;
-    height: 100%;
-    dock: left;
-    background: $surface-darken-1;
-    border-right: solid $primary;
-    padding: 1;
+.dashboard-header {
+    height: 3;
+    border-bottom: solid $primary;
+    padding: 0 2;
+    content-align: center middle;
 }
 
-.sidebar-title {
-    text-align: center;
+.dashboard-title {
     text-style: bold;
     color: $primary;
+}
+
+.dashboard-content {
+    height: 1fr;
+    padding: 2;
+}
+
+.welcome-container {
+    border: solid $primary;
+    padding: 2;
+    height: auto;
+}
+
+.welcome-title {
+    text-style: bold;
+    color: $primary;
+    text-align: center;
     margin-bottom: 1;
 }
 
-.sidebar-user {
-    text-align: center;
-    margin-bottom: 1;
+.nav-hint {
+    margin-top: 1;
     color: $text-muted;
 }
 
-.sidebar-menu {
-    height: auto;
-    margin-top: 1;
+/* Workspace Screen - Tabbed Interface */
+WorkspaceScreen {
+    layout: vertical;
 }
 
-.sidebar-button {
-    width: 100%;
-    margin-bottom: 1;
+.workspace-header {
+    height: 3;
+    border-bottom: solid $primary;
+    padding: 0 2;
+    content-align: left middle;
 }
 
-.sidebar-button:focus {
-    background: $primary-darken-2;
+.workspace-title {
+    text-style: bold;
+    color: $primary;
 }
 
-.main-content {
-    width: 1fr;
-    height: 100%;
-    padding: 1 2;
+.workspace-content {
+    height: 1fr;
+    padding: 1;
 }
 
-.content-title {
+/* Tabbed Content Styling */
+TabbedContent {
+    height: 1fr;
+}
+
+TabbedContent > ContentSwitcher {
+    height: 1fr;
+}
+
+/* Tab Pane Containers */
+.tab-pane-container {
+    height: 1fr;
+    border: solid $primary;
+    padding: 1;
+}
+
+.tab-pane-title {
     text-style: bold;
     color: $primary;
     margin-bottom: 1;
+}
+
+/* Search Container */
+.search-container {
+    layout: horizontal;
+    height: auto;
+    margin-bottom: 1;
+    padding-bottom: 1;
+    border-bottom: solid $primary-darken-2;
+}
+
+.search-input {
+    width: 1fr;
+}
+
+.search-select {
+    width: 20;
+    margin-left: 1;
 }
 
 /* Data Tables */
 DataTable {
     height: 1fr;
     border: solid $primary-darken-2;
-    background: $surface;
+}
+
+DataTable:focus {
+    border: solid $primary;
+}
+
+/* Profile Screen */
+ProfileScreen {
+    layout: vertical;
+}
+
+.profile-header {
+    height: 3;
+    border-bottom: solid $primary;
+    padding: 0 2;
+    content-align: left middle;
+}
+
+.profile-content {
+    height: 1fr;
+    padding: 2;
+}
+
+.profile-container {
+    border: solid $primary;
+    padding: 2;
+    height: auto;
+    margin-bottom: 1;
+}
+
+.profile-title {
+    text-style: bold;
+    color: $primary;
+    margin-bottom: 1;
+}
+
+.profile-row {
+    layout: horizontal;
+    height: auto;
+    margin-bottom: 1;
+}
+
+.profile-label {
+    width: 15;
+    text-style: bold;
+}
+
+.profile-value {
+    width: 1fr;
+}
+
+/* Users Management Section */
+.users-section {
+    border: solid $primary;
+    padding: 1;
+    height: 1fr;
+}
+
+.users-title {
+    text-style: bold;
+    color: $primary;
+    margin-bottom: 1;
 }
 
 /* Forms */
 .form-container {
+    border: solid $primary;
+    padding: 2;
     height: auto;
-    border: solid $primary-darken-2;
-    padding: 1 2;
-    margin-bottom: 1;
 }
 
 .form-title {
     text-style: bold;
+    color: $primary;
     margin-bottom: 1;
 }
 
@@ -128,31 +244,49 @@ DataTable {
     width: 1fr;
 }
 
-.form-buttons {
-    layout: horizontal;
+/* Screen Layout - Ensures shortcuts bar is always visible */
+.screen-layout {
+    height: 100%;
+    layout: vertical;
+}
+
+.screen-layout > .workspace-header {
     height: auto;
-    margin-top: 1;
 }
 
-/* Search Bar */
-.search-container {
-    layout: horizontal;
+.screen-layout > .workspace-content {
+    height: 1fr;
+}
+
+.screen-layout > .profile-header {
     height: auto;
-    margin-bottom: 1;
 }
 
-.search-input {
-    width: 1fr;
+.screen-layout > .profile-content {
+    height: 1fr;
 }
 
-.search-button {
-    margin-left: 1;
+.screen-layout > .shortcuts-bar {
+    height: auto;
+}
+
+/* Shortcuts Bar */
+.shortcuts-bar {
+    height: 1;
+    border-top: solid $primary;
+    padding: 0 2;
+    content-align: left middle;
+    color: $text-muted;
+}
+
+.shortcuts-bar:focus {
+    color: $text;
 }
 
 /* Order Creation */
 .order-cart {
     height: 15;
-    border: solid $primary-darken-2;
+    border: solid $primary;
     padding: 1;
     margin-bottom: 1;
 }
@@ -171,7 +305,7 @@ DataTable {
 
 .product-selector {
     height: 1fr;
-    border: solid $primary-darken-2;
+    border: solid $primary;
 }
 
 /* Status indicators */
@@ -201,7 +335,6 @@ Dialog {
     height: auto;
     border: solid $primary;
     padding: 1 2;
-    background: $surface;
 }
 
 .dialog-title {
@@ -221,34 +354,14 @@ Dialog {
     align: center middle;
 }
 
-/* Buttons */
-Button {
-    margin: 0 1;
-}
-
-Button.primary {
-    background: $primary;
-    color: $text;
-}
-
-Button.danger {
-    background: $error;
-    color: $text;
-}
-
-Button.success {
-    background: $success;
-    color: $text;
-}
-
 /* Scrollbars */
 Scrollbar {
-    background: $surface-darken-1;
+    color: $primary-darken-2;
 }
 
 /* Selection List */
 SelectionList {
-    border: solid $primary-darken-2;
+    border: solid $primary;
 }
 
 /* Select (Dropdown) */
@@ -256,9 +369,17 @@ Select {
     width: 1fr;
 }
 
+Select:focus {
+    border: solid $primary;
+}
+
 /* Input */
 Input {
     width: 1fr;
+}
+
+Input:focus {
+    border: solid $primary;
 }
 
 /* Label */
@@ -269,4 +390,18 @@ Label {
 /* Static */
 Static {
     height: auto;
+}
+
+/* Tab styling */
+Tab {
+    padding: 0 2;
+}
+
+Tab:focus {
+    text-style: bold;
+}
+
+/* Content Switcher */
+ContentSwitcher {
+    height: 1fr;
 }

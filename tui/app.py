@@ -7,14 +7,12 @@ from models import SessionUser
 from tui.screens.dashboard import DashboardScreen
 from tui.screens.login import LoginScreen
 from tui.screens.order_new import OrderNewScreen
-from tui.screens.orders import OrdersScreen
 from tui.screens.product_new import ProductNewScreen
-from tui.screens.products import ProductsScreen
+from tui.screens.profile import ProfileScreen
 from tui.screens.service_new import ServiceNewScreen
-from tui.screens.services import ServicesScreen
 from tui.screens.signup import SignupScreen
 from tui.screens.user_new import UserNewScreen
-from tui.screens.users import UsersScreen
+from tui.screens.workspace import WorkspaceScreen
 
 
 class CtrlMarketApp(App):
@@ -26,10 +24,8 @@ class CtrlMarketApp(App):
         "login": LoginScreen,
         "signup": SignupScreen,
         "dashboard": DashboardScreen,
-        "products": ProductsScreen,
-        "orders": OrdersScreen,
-        "services": ServicesScreen,
-        "users": UsersScreen,
+        "workspace": WorkspaceScreen,
+        "profile": ProfileScreen,
         "order_new": OrderNewScreen,
         "product_new": ProductNewScreen,
         "service_new": ServiceNewScreen,

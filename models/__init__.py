@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from typing import Literal, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class UserBase(BaseModel):
@@ -20,8 +20,7 @@ class User(UserBase):
     user_id: Optional[int] = None
     password_hash: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserCreate(UserBase):
@@ -60,8 +59,7 @@ class Product(ProductBase):
 
     product_id: Optional[int] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ProductCreate(ProductBase):
@@ -92,8 +90,7 @@ class OrderItem(OrderItemBase):
     order_item_id: Optional[int] = None
     order_id: Optional[int] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class OrderItemWithProduct(OrderItem):
@@ -124,8 +121,7 @@ class Order(OrderBase):
 
     order_id: Optional[int] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class OrderWithItems(Order):
@@ -163,8 +159,7 @@ class ServiceRequest(ServiceRequestBase):
 
     request_id: Optional[int] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ServiceRequestWithDetails(ServiceRequest):

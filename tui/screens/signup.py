@@ -2,12 +2,23 @@
 
 import bcrypt
 from textual.app import ComposeResult
-from textual.containers import Container, Horizontal
+from textual.containers import Container
+from textual.reactive import reactive
 from textual.screen import Screen
-from textual.widgets import Button, Input, Label, Select
+from textual.widgets import Input, Label, Select, Static
 
 from database.queries import create_user, get_user_by_email
 from models import SessionUser, UserCreate
+
+
+class ShortcutsBar(Static):
+    """Bar at bottom showing keyboard shortcuts."""
+
+    shortcuts = reactive("")
+
+    def watch_shortcuts(self, shortcuts: str) -> None:
+        """Update display when shortcuts change."""
+        self.update(shortcuts)
 
 
 class SignupScreen(Screen):
@@ -15,69 +26,81 @@ class SignupScreen(Screen):
 
     CSS_PATH = "../css/main.tcss"
 
+    BINDINGS = [
+        ("enter", "signup", "Sign Up"),
+        ("alt+1", "go_back", "Back to Login"),
+    ]
+
     def __init__(self) -> None:
         self.error_label: Label | None = None
         super().__init__()
 
     def compose(self) -> ComposeResult:
-        with Container(classes="login-container"):
-            yield Label("Create Account", classes="login-title")
-            yield Label(
-                "CTRL Market - Smart Equipment Sales & Services", classes="login-title"
-            )
-            yield Label("")
+        # Header
+        with Container(classes="workspace-header"):
+            yield Label("CTRL Market", classes="login-title")
 
-            yield Label("Name:")
-            yield Input(placeholder="Enter your full name", id="name")
+        # Main content
+        with Container(classes="workspace-content"):
+            with Container(classes="login-container"):
+                yield Label("Create Account", classes="login-title")
+                yield Label("Smart Equipment Sales & Services", classes="login-title")
+                yield Static("")
 
-            yield Label("Email:")
-            yield Input(placeholder="Enter your email", id="email")
+                yield Label("Name:")
+                yield Input(placeholder="Enter your full name", id="name")
 
-            yield Label("Phone:")
-            yield Input(placeholder="Enter your phone number", id="phone")
+                yield Label("Email:")
+                yield Input(placeholder="Enter your email", id="email")
 
-            yield Label("Role:")
-            yield Select(
-                [
-                    ("Customer", "Customer"),
-                    ("Specialist", "Specialist"),
-                    ("Admin", "Admin"),
-                ],
-                allow_blank=False,
-                value="Customer",
-                id="role",
-            )
+                yield Label("Phone:")
+                yield Input(placeholder="Enter your phone number", id="phone")
 
-            yield Label("Password:")
-            yield Input(
-                placeholder="Enter password (min 6 chars)", password=True, id="password"
-            )
+                yield Label("Role:")
+                yield Select(
+                    [
+                        ("Customer", "Customer"),
+                        ("Specialist", "Specialist"),
+                        ("Admin", "Admin"),
+                    ],
+                    allow_blank=False,
+                    value="Customer",
+                    id="role",
+                )
 
-            yield Label("Confirm Password:")
-            yield Input(
-                placeholder="Confirm your password",
-                password=True,
-                id="confirm_password",
-            )
+                yield Label("Password:")
+                yield Input(
+                    placeholder="Enter password (min 6 chars)",
+                    password=True,
+                    id="password",
+                )
 
-            with Horizontal(classes="form-buttons"):
-                yield Button("Sign Up", variant="primary", id="signup-btn")
-                yield Button("Back to Login", id="back-btn")
+                yield Label("Confirm Password:")
+                yield Input(
+                    placeholder="Confirm your password",
+                    password=True,
+                    id="confirm_password",
+                )
 
-            self.error_label = Label("", classes="login-error")
-            yield self.error_label
+                yield Static("")
+                yield Label(
+                    "Press \[Enter] to sign up, \[Alt+1] to go back",
+                    classes="login-title",
+                )
+                self.error_label = Label("", classes="login-error")
+                yield self.error_label
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "signup-btn":
-            self._handle_signup()
-        elif event.button.id == "back-btn":
-            self.app.push_screen("login")
+        # Shortcuts bar
+        shortcuts_bar = ShortcutsBar(id="shortcuts-bar", classes="shortcuts-bar")
+        shortcuts_bar.shortcuts = "\\[Enter\\]Sign Up \\[Alt+1\\]Back to Login"
+        yield shortcuts_bar
 
-    def _handle_signup(self) -> None:
+    def action_signup(self) -> None:
+        """Handle signup action."""
         name = self.query_one("#name", Input).value.strip()
         email = self.query_one("#email", Input).value.strip()
         phone = self.query_one("#phone", Input).value.strip()
-        role = self.query_one("#role", Select).value
+        role_select = self.query_one("#role", Select)
         password = self.query_one("#password", Input).value
         confirm_password = self.query_one("#confirm_password", Input).value
 
@@ -98,6 +121,15 @@ class SignupScreen(Screen):
             if self.error_label:
                 self.error_label.update("Password must be at least 6 characters")
             return
+
+        # Get role value safely
+        role_value = role_select.value
+        if role_value is None or role_value == Select.BLANK:
+            role: str = "Customer"
+        elif hasattr(role_value, "value"):
+            role = role_value.value
+        else:
+            role = str(role_value)
 
         # Check for duplicate email
         existing_user = get_user_by_email(email)
@@ -132,8 +164,14 @@ class SignupScreen(Screen):
             return
 
         # Auto-login: Create session user and navigate to dashboard
+        user_id = new_user.user_id
+        if user_id is None:
+            if self.error_label:
+                self.error_label.update("Failed to create user")
+            return
+
         session_user = SessionUser(
-            user_id=new_user.user_id,
+            user_id=user_id,
             name=new_user.name,
             email=new_user.email,
             role=new_user.role,
@@ -141,3 +179,11 @@ class SignupScreen(Screen):
 
         self.app.current_user = session_user
         self.app.push_screen("dashboard")
+
+    def action_go_back(self) -> None:
+        """Navigate back to login screen."""
+        self.app.pop_screen()
+
+    def _on_input_submitted(self, event: Input.Submitted) -> None:
+        """Handle Enter key in any input field."""
+        self.action_signup()

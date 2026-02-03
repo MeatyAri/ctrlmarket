@@ -3,11 +3,22 @@
 import bcrypt
 from textual.app import ComposeResult
 from textual.containers import Container
+from textual.reactive import reactive
 from textual.screen import Screen
-from textual.widgets import Button, Input, Label
+from textual.widgets import Input, Label, Static
 
 from database.queries import authenticate_user, get_user_password_hash
 from models import LoginCredentials
+
+
+class ShortcutsBar(Static):
+    """Bar at bottom showing keyboard shortcuts."""
+
+    shortcuts = reactive("")
+
+    def watch_shortcuts(self, shortcuts: str) -> None:
+        """Update display when shortcuts change."""
+        self.update(shortcuts)
 
 
 class LoginScreen(Screen):
@@ -15,33 +26,46 @@ class LoginScreen(Screen):
 
     CSS_PATH = "../css/main.tcss"
 
+    BINDINGS = [
+        ("enter", "login", "Login"),
+        ("alt+2", "go_signup", "Sign Up"),
+    ]
+
     def __init__(self) -> None:
         self.error_label: Label | None = None
         super().__init__()
 
     def compose(self) -> ComposeResult:
-        with Container(classes="login-container"):
+        # Header
+        with Container(classes="workspace-header"):
             yield Label("CTRL Market", classes="login-title")
-            yield Label("Smart Equipment Sales & Services", classes="login-title")
-            yield Label("")
-            yield Label("Email:")
-            yield Input(placeholder="Enter your email", id="email")
-            yield Label("Password:")
-            yield Input(placeholder="Enter your password", password=True, id="password")
-            yield Button("Login", variant="primary", id="login-btn")
-            yield Label("")
-            yield Label("Don't have an account?", classes="login-title")
-            yield Button("Sign Up", id="signup-btn")
-            self.error_label = Label("", classes="login-error")
-            yield self.error_label
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "login-btn":
-            self._handle_login()
-        elif event.button.id == "signup-btn":
-            self.app.push_screen("signup")
+        # Main content - centered login form
+        with Container(classes="workspace-content"):
+            with Container(classes="login-container"):
+                yield Label("Smart Equipment Sales & Services", classes="login-title")
+                yield Static("")
+                yield Label("Email:")
+                yield Input(placeholder="Enter your email", id="email")
+                yield Label("Password:")
+                yield Input(
+                    placeholder="Enter your password", password=True, id="password"
+                )
+                yield Static("")
+                yield Label(
+                    "Don't have an account? Press \[Alt+2] to sign up",
+                    classes="login-title",
+                )
+                self.error_label = Label("", classes="login-error")
+                yield self.error_label
 
-    def _handle_login(self) -> None:
+        # Shortcuts bar
+        shortcuts_bar = ShortcutsBar(id="shortcuts-bar", classes="shortcuts-bar")
+        shortcuts_bar.shortcuts = "\[Enter]Login \[Alt+2]Sign Up"
+        yield shortcuts_bar
+
+    def action_login(self) -> None:
+        """Handle login action."""
         email = self.query_one("#email", Input).value.strip()
         password = self.query_one("#password", Input).value
 
@@ -76,3 +100,15 @@ class LoginScreen(Screen):
         else:
             if self.error_label:
                 self.error_label.update("Authentication failed")
+
+    def action_go_signup(self) -> None:
+        """Navigate to signup screen."""
+        self.app.push_screen("signup")
+
+    def _on_input_submitted(self, event: Input.Submitted) -> None:
+        """Handle Enter key in any input field."""
+        self.action_login()
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        """Handle Enter key in any input field."""
+        self.action_login()
