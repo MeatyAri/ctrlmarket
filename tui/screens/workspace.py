@@ -212,8 +212,7 @@ class WorkspaceScreen(Screen):
         if not current_user:
             return
 
-        is_customer = current_user.role == "Customer"
-        is_specialist = current_user.role == "Specialist"
+        _ = current_user.role
 
     def _update_shortcuts(self) -> None:
         """Update shortcuts bar based on current tab and role."""

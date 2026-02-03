@@ -2,7 +2,6 @@
 
 from textual.widgets import Input, Label
 
-from tui.app import CtrlMarketApp
 from tui.screens.login import LoginScreen
 from tui.screens.signup import SignupScreen
 
@@ -12,7 +11,7 @@ class TestLoginScreen:
 
     async def test_login_screen_composition(self, app):
         """Test login screen has all required widgets."""
-        async with app.run_test() as pilot:
+        async with app.run_test():
             login_screen = app.screen
             assert isinstance(login_screen, LoginScreen)
 
@@ -22,7 +21,7 @@ class TestLoginScreen:
 
     async def test_login_screen_title_labels(self, app):
         """Test login screen has title labels."""
-        async with app.run_test() as pilot:
+        async with app.run_test():
             login_screen = app.screen
             labels = list(login_screen.query(Label))
             assert len(labels) >= 6
@@ -53,7 +52,7 @@ class TestWidgetQueries:
 
     async def test_query_input_widgets(self, app):
         """Test querying input widgets."""
-        async with app.run_test() as pilot:
+        async with app.run_test():
             login_screen = app.screen
 
             inputs = list(login_screen.query(Input))
@@ -64,7 +63,7 @@ class TestWidgetQueries:
 
     async def test_query_by_id(self, app):
         """Test querying widgets by ID."""
-        async with app.run_test() as pilot:
+        async with app.run_test():
             login_screen = app.screen
 
             email_input = login_screen.query_one("#email", Input)

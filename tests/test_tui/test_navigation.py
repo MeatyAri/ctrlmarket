@@ -1,6 +1,5 @@
 """Test navigation between screens."""
 
-from tui.app import CtrlMarketApp
 from tui.screens.login import LoginScreen
 from tui.screens.signup import SignupScreen
 
@@ -26,8 +25,6 @@ class TestScreenNavigation:
     async def test_screen_stack_management(self, app):
         """Test that screen stack is managed properly."""
         async with app.run_test(size=(120, 40)) as pilot:
-            initial_screen = app.screen
-
             await pilot.click(".workspace-header")
             await pilot.press("alt+2")
             await pilot.pause()

@@ -184,7 +184,7 @@ class ProfileScreen(Screen):
                 tabbed = self.query_one(TabbedContent)
                 if tabbed.active == "users":
                     shortcuts.append("\\[n]New \\[e]Edit \\[d]Delete \\[/]Search")
-            except:
+            except Exception:
                 pass
             shortcuts.append("\\[r]Refresh")
 
@@ -247,7 +247,7 @@ class ProfileScreen(Screen):
                 if tabbed.active == "users":
                     search_input = self.query_one("#users-search", Input)
                     search_input.focus()
-            except:
+            except Exception:
                 pass
 
     def action_new_user(self) -> None:

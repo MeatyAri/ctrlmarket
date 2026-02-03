@@ -2,8 +2,6 @@
 
 from textual.widgets import DataTable, TabbedContent
 
-from models import SessionUser
-from tui.app import CtrlMarketApp
 from tui.screens.profile import ProfileScreen
 
 

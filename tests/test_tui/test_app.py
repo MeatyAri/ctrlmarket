@@ -3,7 +3,6 @@
 from textual.widgets import Input
 
 from models import SessionUser
-from tui.app import CtrlMarketApp
 from tui.screens.dashboard import DashboardScreen
 from tui.screens.login import LoginScreen
 
@@ -13,12 +12,12 @@ class TestCtrlMarketApp:
 
     async def test_app_initialization(self, app):
         """Test app initializes correctly."""
-        async with app.run_test() as pilot:
+        async with app.run_test():
             assert app.is_running
 
     async def test_app_has_screens_registered(self, app):
         """Test that all screens are registered."""
-        async with app.run_test() as pilot:
+        async with app.run_test():
             expected_screens = [
                 "login",
                 "signup",
@@ -35,12 +34,12 @@ class TestCtrlMarketApp:
 
     async def test_app_current_user_starts_none(self, app):
         """Test that current_user is None at start."""
-        async with app.run_test() as pilot:
+        async with app.run_test():
             assert app.current_user is None
 
     async def test_app_mount_shows_login_screen(self, app):
         """Test that app shows login screen on mount."""
-        async with app.run_test() as pilot:
+        async with app.run_test():
             assert isinstance(app.screen, LoginScreen)
 
 
@@ -49,13 +48,13 @@ class TestAppCSS:
 
     async def test_css_path_exists(self, app):
         """Test that CSS path is configured."""
-        async with app.run_test() as pilot:
+        async with app.run_test():
             assert app.CSS_PATH is not None
             assert "main.tcss" in str(app.CSS_PATH)
 
     async def test_screen_css_paths(self, app):
         """Test that screens have CSS paths configured."""
-        async with app.run_test() as pilot:
+        async with app.run_test():
             login_screen = app.screen
             assert login_screen.CSS_PATH is not None
 

@@ -1,7 +1,6 @@
 """Pytest configuration and shared fixtures for TUI tests."""
 
 import pytest
-from textual.widgets import Input
 
 from models import SessionUser
 from tui.app import CtrlMarketApp

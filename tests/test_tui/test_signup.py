@@ -2,7 +2,6 @@
 
 from textual.widgets import Input
 
-from tui.app import CtrlMarketApp
 from tui.screens.login import LoginScreen
 from tui.screens.signup import SignupScreen
 

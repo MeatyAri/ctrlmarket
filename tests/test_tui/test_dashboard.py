@@ -1,7 +1,5 @@
 """Test dashboard screen functionality."""
 
-from models import SessionUser
-from tui.app import CtrlMarketApp
 from tui.screens.dashboard import DashboardScreen
 
 
