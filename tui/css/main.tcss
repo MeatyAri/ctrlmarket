@@ -36,7 +36,7 @@ SignupScreen > .workspace-content {
     text-align: center;
     text-style: bold;
     color: $primary;
-    margin-bottom: 1;
+    margin-top: 1;
 }
 
 .login-error {
@@ -51,7 +51,7 @@ DashboardScreen {
 }
 
 .dashboard-header {
-    height: 3;
+    height: 4;
     border-bottom: solid $primary;
     padding: 0 2;
     content-align: center middle;
@@ -60,6 +60,7 @@ DashboardScreen {
 .dashboard-title {
     text-style: bold;
     color: $primary;
+    margin-top: 1;
 }
 
 .dashboard-content {
@@ -91,7 +92,7 @@ WorkspaceScreen {
 }
 
 .workspace-header {
-    height: 3;
+    height: 4;
     border-bottom: solid $primary;
     padding: 0 2;
     content-align: left middle;

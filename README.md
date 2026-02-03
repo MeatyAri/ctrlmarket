@@ -6,6 +6,27 @@ A Smart Equipment Sales & Services Textual User Interface (TUI) application buil
 
 CtrlMarket is a terminal-based application for managing equipment sales and service requests. It provides a full-featured interface for customers, specialists, and administrators to manage products, orders, and service requests.
 
+![CtrlMarket Screenshot](./content/app-screenshot.webp)
+
+## About This Project
+
+This project was originally built as a university Database course assignment. I've decided to publish it anyways because I believe in the power of terminal-based applications for business operations. TUIs can be far more efficient than bloated web interfaces for many use cases.
+
+Inspired by [terminal.shop](https://terminal.shop) from ThePrimeagen, I encourage deploying applications like this over SSH. This approach offers:
+- **Speed**: Terminal interfaces are instant and lightweight
+- **Accessibility**: Works over any SSH connection, even on mobile
+- **Simplicity**: No browser, no JavaScript, no CSS headaches
+- **Security**: Fewer attack vectors than web applications
+
+If you're running a business, consider whether a TUI could serve your team better than another React dashboard.
+
+## Personal Recommendations
+
+If you're building something similar:
+
+- **Use an ORM**: I only used raw SQL because the assignment required it. In production, use SQLAlchemy, Drizzle, or similar. It makes migrations, relationships, and queries much cleaner.
+- **Consider Rust or TypeScript for TUIs**: For new projects, I'd recommend [ratatui](https://github.com/ratatui-org/ratatui) (Rust) or libraries built on it. Python's Textual is great for prototyping, but Rust's compile-time guarantees and performance make it ideal for terminal applications.
+
 ## Features
 
 - **User Management**: Sign up, login, and role-based access (Customer, Specialist, Admin)
