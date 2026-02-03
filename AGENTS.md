@@ -4,7 +4,7 @@
 - `uv run main.py` - Run the application
 - `uv add <package>` - Add dependencies
 - `uv sync` - Sync dependencies from lock file
-- `uv run pytest tests/` - Run all tests
+- `uv run pytest` - Run all tests
 - `uv run pytest tests/test_file.py::test_function` - Run single test
 - `ruff check .` - Lint code
 - `ruff format .` - Format code
@@ -27,5 +27,3 @@ All database operations must use raw SQL with proper foreign key constraints.
 ## Output Handling
 - When running commands that generate significant output (tests, builds, etc.), always use `tail` to capture the last 50-100 lines for analysis and reporting
 
-## Output Handling
-- When running commands that generate significant output (tests, builds, etc.), always use `tail` to capture the last 50-100 lines for analysis and reporting
