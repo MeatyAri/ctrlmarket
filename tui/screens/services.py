@@ -1,5 +1,6 @@
 """Service requests management screen."""
 
+from textual import on
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal
 from textual.screen import Screen
@@ -87,8 +88,7 @@ class ServicesScreen(Screen):
         is_customer = current_user.role == "Customer"
         is_specialist = current_user.role == "Specialist"
 
-        if is_customer:
-            # Customers can only view their own requests and create new ones
+        if is_customer or not is_specialist:
             self.query_one("#btn-assign", Button).display = False
             self.query_one("#btn-complete", Button).display = False
             self.query_one("#btn-cancel", Button).display = False
@@ -142,10 +142,21 @@ class ServicesScreen(Screen):
                 specialist,
             )
 
-    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
-        """Handle row selection."""
-        row_data = event.data_table.get_row(event.row_key)
-        self.selected_request_id = int(row_data[0])
+    def _get_selected_request_id(self) -> int | None:
+        """Get request ID from currently highlighted row."""
+        table = self.query_one("#requests-table", DataTable)
+        if table.cursor_row is None:
+            return None
+        try:
+            row_data = table.get_row_at(table.cursor_row)
+            return int(row_data[0])
+        except (IndexError, ValueError):
+            return None
+
+    @on(DataTable.RowHighlighted, "#requests-table")
+    def on_datatable_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
+        """Track cursor movement to auto-select highlighted row."""
+        self.selected_request_id = self._get_selected_request_id()
 
     def on_select_changed(self, event: Select.Changed) -> None:
         """Handle filter change."""

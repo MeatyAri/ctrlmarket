@@ -1,5 +1,6 @@
 """Products management screen."""
 
+from textual import on
 from textual.app import ComposeResult
 from textual.containers import Container
 from textual.screen import Screen
@@ -11,6 +12,8 @@ from database.queries import (
     list_product_categories,
     list_products,
 )
+from tui.dialogs import ConfirmDialog, ShortcutsBar
+from tui.screens.product_edit import ProductEditScreen
 
 
 class ProductsScreen(Screen):
@@ -21,6 +24,8 @@ class ProductsScreen(Screen):
     BINDINGS = [
         ("escape", "go_back", "Back"),
         ("n", "new_product", "New Product"),
+        ("e", "edit_product", "Edit Product"),
+        ("d", "delete_product", "Delete Product"),
         ("q", "logout", "Logout"),
     ]
 
@@ -44,7 +49,6 @@ class ProductsScreen(Screen):
         with Container(classes="main-content"):
             yield Label("Product Catalog", classes="content-title")
 
-            # Search bar
             with Container(classes="search-container"):
                 yield Input(
                     placeholder="Search products...",
@@ -58,11 +62,12 @@ class ProductsScreen(Screen):
                 )
                 yield Button("Search", id="btn-search", variant="primary")
 
-            # Products table
             table = DataTable(id="products-table")
             table.add_columns("ID", "Name", "Category", "Price")
             table.cursor_type = "row"
             yield table
+
+        yield ShortcutsBar(id="shortcuts-bar", classes="shortcuts-bar")
 
     def on_mount(self) -> None:
         """Load data when screen mounts."""
@@ -74,10 +79,26 @@ class ProductsScreen(Screen):
         """Update UI based on user role."""
         current_user = getattr(self.app, "current_user", None)
         if current_user and current_user.role == "Customer":
-            # Customers can only view products
             self.query_one("#btn-new", Button).display = False
             self.query_one("#btn-edit", Button).display = False
             self.query_one("#btn-delete", Button).display = False
+        self._update_shortcuts()
+
+    def _update_shortcuts(self) -> None:
+        """Update shortcuts bar based on user role."""
+        current_user = getattr(self.app, "current_user", None)
+        is_customer = current_user and current_user.role == "Customer"
+
+        shortcuts = []
+        shortcuts.append("\\[Esc]Back")
+        if is_customer:
+            shortcuts.append("\\[q]Logout")
+        else:
+            shortcuts.append("\\[n]New \\[e]Edit \\[d]Delete \\[q]Logout")
+        shortcuts.append("\\[r]Refresh")
+
+        shortcuts_bar = self.query_one("#shortcuts-bar", ShortcutsBar)
+        shortcuts_bar.shortcuts = "  |  ".join(shortcuts)
 
     def _load_categories(self) -> None:
         """Load product categories for dropdown."""
@@ -103,10 +124,21 @@ class ProductsScreen(Screen):
                 f"${product.price:.2f}",
             )
 
-    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
-        """Handle row selection."""
-        row_data = event.data_table.get_row(event.row_key)
-        self.selected_product_id = int(row_data[0])
+    def _get_selected_product_id(self) -> int | None:
+        """Get product ID from currently highlighted row."""
+        table = self.query_one("#products-table", DataTable)
+        if table.cursor_row is None:
+            return None
+        try:
+            row_data = table.get_row_at(table.cursor_row)
+            return int(row_data[0])
+        except (IndexError, ValueError):
+            return None
+
+    @on(DataTable.RowHighlighted, "#products-table")
+    def on_datatable_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
+        """Track cursor movement to auto-select highlighted row."""
+        self.selected_product_id = self._get_selected_product_id()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button presses."""
@@ -135,31 +167,42 @@ class ProductsScreen(Screen):
     def _handle_edit(self) -> None:
         """Handle edit button."""
         if not self.selected_product_id:
+            self.notify("No product selected", severity="warning")
             return
-        self.app.push_screen(f"product_edit:{self.selected_product_id}")
+        self.app.push_screen(ProductEditScreen(self.selected_product_id))
 
     def _handle_delete(self) -> None:
         """Handle delete button."""
         if not self.selected_product_id:
+            self.notify("No product selected", severity="warning")
             return
 
         product = get_product_by_id(self.selected_product_id)
         if not product:
+            self.notify("Product not found", severity="error")
             return
 
         def confirm_delete(confirmed: bool) -> None:
             if confirmed:
                 if delete_product(self.selected_product_id):
+                    self.notify(
+                        f"Product '{product.name}' deleted successfully",
+                        severity="information",
+                    )
                     self._load_products()
                     self.selected_product_id = None
+                else:
+                    self.notify(
+                        f"Cannot delete '{product.name}': product is referenced in existing orders",
+                        severity="error",
+                    )
 
         self.app.push_screen(
-            "confirm_dialog",
-            {
-                "title": "Confirm Delete",
-                "message": f"Delete product '{product.name}'?",
-                "on_confirm": confirm_delete,
-            },
+            ConfirmDialog(
+                title="Confirm Delete",
+                message=f"Delete product '{product.name}'?",
+                on_confirm=confirm_delete,
+            )
         )
 
     def action_go_back(self) -> None:
@@ -173,3 +216,14 @@ class ProductsScreen(Screen):
     def action_new_product(self) -> None:
         """Open new product dialog."""
         self.app.push_screen("product_new")
+
+    def action_edit_product(self) -> None:
+        """Edit selected product."""
+        if not self.selected_product_id:
+            self.notify("No product selected", severity="warning")
+            return
+        self.app.push_screen(ProductEditScreen(self.selected_product_id))
+
+    def action_delete_product(self) -> None:
+        """Delete selected product."""
+        self._handle_delete()

@@ -1,16 +1,14 @@
 """Unified workspace screen with tabbed interface for Products, Orders, and Services."""
 
+from textual import on
 from textual.app import ComposeResult
 from textual.containers import Container
-from textual.reactive import reactive
-from textual.screen import ModalScreen, Screen
+from textual.screen import Screen
 from textual.widgets import (
-    Button,
     DataTable,
     Input,
     Label,
     Select,
-    Static,
     TabbedContent,
     TabPane,
 )
@@ -31,52 +29,8 @@ from database.queries import (
     update_service_request_status,
 )
 from models import OrderUpdateStatus, ServiceRequestUpdateStatus
-
-
-class ConfirmDialog(ModalScreen[bool]):
-    """Simple confirmation dialog."""
-
-    def __init__(self, title: str, message: str, on_confirm) -> None:
-        self.dialog_title = title
-        self.dialog_message = message
-        self.on_confirm_callback = on_confirm
-        super().__init__()
-
-    def compose(self) -> ComposeResult:
-        with Container(classes="dialog-container"):
-            yield Label(self.dialog_title, classes="dialog-title")
-            yield Label(self.dialog_message, classes="dialog-message")
-            with Container(classes="dialog-buttons"):
-                yield Button("Yes", id="btn-yes", variant="primary")
-                yield Button("No", id="btn-no")
-
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        """Handle button press."""
-        if event.button.id == "btn-yes":
-            self.on_confirm_callback(True)
-            self.dismiss(True)
-        elif event.button.id == "btn-no":
-            self.on_confirm_callback(False)
-            self.dismiss(False)
-
-    def on_key(self, event) -> None:
-        """Handle key press."""
-        if event.key == "y":
-            yes_btn = self.query_one("#btn-yes", Button)
-            self.on_button_pressed(Button.Pressed(yes_btn))
-        elif event.key == "n":
-            no_btn = self.query_one("#btn-no", Button)
-            self.on_button_pressed(Button.Pressed(no_btn))
-
-
-class ShortcutsBar(Static):
-    """Bar at bottom showing keyboard shortcuts for current context."""
-
-    shortcuts = reactive("")
-
-    def watch_shortcuts(self, shortcuts: str) -> None:
-        """Update display when shortcuts change."""
-        self.update(shortcuts)
+from tui.dialogs import ConfirmDialog, ShortcutsBar
+from tui.screens.product_edit import ProductEditScreen
 
 
 class WorkspaceScreen(Screen):
@@ -95,8 +49,8 @@ class WorkspaceScreen(Screen):
         ("e", "edit_item", "Edit"),
         ("d", "delete_item", "Delete"),
         ("r", "refresh", "Refresh"),
-        ("enter", "select_item", "Select/View"),
-        ("c", "cancel_complete", "Cancel/Complete"),
+        ("x", "cancel_item", "Cancel"),
+        ("c", "complete_item", "Complete"),
         ("a", "assign_request", "Assign"),
         ("ctrl+s", "focus_search", "Focus Search"),
         ("/", "focus_search", "Focus Search"),
@@ -228,7 +182,7 @@ class WorkspaceScreen(Screen):
         shortcuts.append(
             "\\[Alt+1]Products \\[Alt+2]Orders \\[Alt+3]Services \\[Alt+4]Profile"
         )
-        shortcuts.append("\\[Esc]Back \\[/]Search \\[Enter]Select")
+        shortcuts.append("\\[Esc]Back \\[/]Search")
 
         if active_tab == "products":
             if not is_customer:
@@ -240,14 +194,16 @@ class WorkspaceScreen(Screen):
             if not is_customer:
                 shortcuts.append("\\[c]Complete")
             if not is_specialist:
-                shortcuts.append("\\[c]Cancel")
+                shortcuts.append("\[x]Cancel")
             shortcuts.append("\\[r]Refresh")
         elif active_tab == "services":
             if not is_specialist:
-                shortcuts.append("\\[n]New")
-            if not is_customer:
-                shortcuts.append("\\[c]Complete \\[a]Assign")
-            shortcuts.append("\\[r]Refresh")
+                shortcuts.append("\[n]New")
+            if is_specialist:
+                shortcuts.append("\[c]Complete \[a]Assign")
+            elif not is_customer:
+                shortcuts.append("\[c]Complete")
+            shortcuts.append("\[r]Refresh")
 
         shortcuts_bar = self.query_one("#shortcuts-bar", ShortcutsBar)
         shortcuts_bar.shortcuts = "  |  ".join(shortcuts)
@@ -344,17 +300,43 @@ class WorkspaceScreen(Screen):
                 specialist,
             )
 
-    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
-        """Handle row selection."""
-        table_id = event.data_table.id
-        row_data = event.data_table.get_row(event.row_key)
+    def _get_selected_id_from_table(self, table_id: str) -> int | None:
+        """Get ID from currently highlighted row in specified table."""
+        table = self.query_one(f"#{table_id}", DataTable)
+        if table.cursor_row is None:
+            return None
+        try:
+            row_data = table.get_row_at(table.cursor_row)
+            return int(row_data[0])
+        except (IndexError, ValueError):
+            return None
 
-        if table_id == "products-table":
-            self.selected_product_id = int(row_data[0])
-        elif table_id == "orders-table":
-            self.selected_order_id = int(row_data[0])
-        elif table_id == "services-table":
-            self.selected_request_id = int(row_data[0])
+    def _get_selected_product_id(self) -> int | None:
+        """Get product ID from currently highlighted row."""
+        return self._get_selected_id_from_table("products-table")
+
+    def _get_selected_order_id(self) -> int | None:
+        """Get order ID from currently highlighted row."""
+        return self._get_selected_id_from_table("orders-table")
+
+    def _get_selected_request_id(self) -> int | None:
+        """Get request ID from currently highlighted row."""
+        return self._get_selected_id_from_table("services-table")
+
+    @on(DataTable.RowHighlighted, "#products-table")
+    def on_products_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
+        """Track cursor movement in products table."""
+        self.selected_product_id = self._get_selected_product_id()
+
+    @on(DataTable.RowHighlighted, "#orders-table")
+    def on_orders_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
+        """Track cursor movement in orders table."""
+        self.selected_order_id = self._get_selected_order_id()
+
+    @on(DataTable.RowHighlighted, "#services-table")
+    def on_services_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
+        """Track cursor movement in services table."""
+        self.selected_request_id = self._get_selected_request_id()
 
     def on_tabbed_content_tab_activated(self) -> None:
         """Update shortcuts when tab changes."""
@@ -460,7 +442,7 @@ class WorkspaceScreen(Screen):
             current_user = getattr(self.app, "current_user", None)
             if not current_user or current_user.role == "Customer":
                 return
-            self.app.push_screen(f"product_edit:{self.selected_product_id}")
+            self.app.push_screen(ProductEditScreen(self.selected_product_id))
 
     def action_delete_item(self) -> None:
         """Delete selected item."""
@@ -504,16 +486,8 @@ class WorkspaceScreen(Screen):
         elif active_tab == "services":
             self._load_requests()
 
-    def action_select_item(self) -> None:
-        """View details of selected item."""
-        tabbed = self.query_one(TabbedContent)
-        active_tab = tabbed.active
-
-        if active_tab == "orders" and self.selected_order_id:
-            self.app.push_screen(f"order_view:{self.selected_order_id}")
-
-    def action_cancel_complete(self) -> None:
-        """Cancel or complete based on context."""
+    def action_cancel_item(self) -> None:
+        """Cancel selected item based on context."""
         tabbed = self.query_one(TabbedContent)
         active_tab = tabbed.active
         current_user = getattr(self.app, "current_user", None)
@@ -522,12 +496,26 @@ class WorkspaceScreen(Screen):
             return
 
         if active_tab == "orders" and self.selected_order_id:
-            self._handle_order_cancel_complete(current_user)
+            self._handle_order_cancel(current_user)
         elif active_tab == "services" and self.selected_request_id:
-            self._handle_service_cancel_complete(current_user)
+            self._handle_service_cancel(current_user)
 
-    def _handle_order_cancel_complete(self, current_user) -> None:
-        """Handle cancel/complete for orders."""
+    def action_complete_item(self) -> None:
+        """Complete selected item based on context."""
+        tabbed = self.query_one(TabbedContent)
+        active_tab = tabbed.active
+        current_user = getattr(self.app, "current_user", None)
+
+        if not current_user:
+            return
+
+        if active_tab == "orders" and self.selected_order_id:
+            self._handle_order_complete(current_user)
+        elif active_tab == "services" and self.selected_request_id:
+            self._handle_service_complete(current_user)
+
+    def _handle_order_cancel(self, current_user) -> None:
+        """Cancel selected order."""
         order_id = self.selected_order_id
         if order_id is None:
             return
@@ -537,25 +525,39 @@ class WorkspaceScreen(Screen):
             return
 
         if current_user.role == "Customer":
-            # Customers can only cancel their own pending orders
             if order.user_id != current_user.user_id or order.status != "Pending":
                 return
             if cancel_order(order_id):
                 self._load_orders()
                 self.selected_order_id = None
         elif current_user.role in ["Specialist", "Admin"]:
-            # Specialists/Admins can complete pending orders
             if order.status != "Pending":
                 return
-            update = OrderUpdateStatus(status="Completed")
-            if update_order_status(order_id, update):
+            if cancel_order(order_id):
                 self._load_orders()
                 self.selected_order_id = None
 
-    def _handle_service_cancel_complete(
-        self, current_user, cancel: bool = False
-    ) -> None:
-        """Handle cancel/complete for services."""
+    def _handle_order_complete(self, current_user) -> None:
+        """Complete selected order."""
+        order_id = self.selected_order_id
+        if order_id is None:
+            return
+
+        order = get_order_by_id(order_id)
+        if not order:
+            return
+
+        if current_user.role not in ["Specialist", "Admin"]:
+            return
+        if order.status != "Pending":
+            return
+        update = OrderUpdateStatus(status="Completed")
+        if update_order_status(order_id, update):
+            self._load_orders()
+            self.selected_order_id = None
+
+    def _handle_service_cancel(self, current_user) -> None:
+        """Cancel selected service request."""
         request_id = self.selected_request_id
         if request_id is None:
             self.notify("No service request selected", severity="error")
@@ -570,34 +572,50 @@ class WorkspaceScreen(Screen):
             self.notify("Service request not found", severity="error")
             return
 
-        if cancel:
-            if request.status not in ("Pending", "In Progress"):
-                self.notify(
-                    "Can only cancel Pending or In Progress requests", severity="error"
-                )
-                return
-            success = update_service_request_status(
-                request_id, ServiceRequestUpdateStatus(status="Cancelled")
+        if request.status not in ("Pending", "In Progress"):
+            self.notify(
+                "Can only cancel Pending or In Progress requests", severity="error"
             )
-            if success:
-                self.notify("Service request cancelled", severity="information")
-            else:
-                self.notify("Failed to cancel service request", severity="error")
+            return
+        success = update_service_request_status(
+            request_id, ServiceRequestUpdateStatus(status="Cancelled")
+        )
+        if success:
+            self.notify("Service request cancelled", severity="information")
         else:
-            if request.status not in ("Pending", "In Progress"):
-                self.notify(
-                    "Can only complete Pending or In Progress requests",
-                    severity="error",
-                )
-                return
-            success = update_service_request_status(
-                request_id, ServiceRequestUpdateStatus(status="Completed")
-            )
-            if success:
-                self.notify("Service request completed", severity="information")
-            else:
-                self.notify("Failed to complete service request", severity="error")
+            self.notify("Failed to cancel service request", severity="error")
+        self._load_requests()
+        self.selected_request_id = None
 
+    def _handle_service_complete(self, current_user) -> None:
+        """Complete selected service request."""
+        request_id = self.selected_request_id
+        if request_id is None:
+            self.notify("No service request selected", severity="error")
+            return
+
+        if current_user.role not in ("Specialist", "Admin"):
+            self.notify("Permission denied", severity="error")
+            return
+
+        request = get_service_request_by_id(request_id)
+        if not request:
+            self.notify("Service request not found", severity="error")
+            return
+
+        if request.status not in ("Pending", "In Progress"):
+            self.notify(
+                "Can only complete Pending or In Progress requests",
+                severity="error",
+            )
+            return
+        success = update_service_request_status(
+            request_id, ServiceRequestUpdateStatus(status="Completed")
+        )
+        if success:
+            self.notify("Service request completed", severity="information")
+        else:
+            self.notify("Failed to complete service request", severity="error")
         self._load_requests()
         self.selected_request_id = None
 

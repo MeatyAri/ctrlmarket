@@ -1,54 +1,44 @@
-"""New product creation screen."""
+"""Product edit screen."""
 
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal
-from textual.reactive import reactive
 from textual.screen import Screen
 from textual.widgets import Input, Label, Static
 
-from database.queries import create_product
-from models import ProductCreate
+from database.queries import get_product_by_id, update_product
+from models import ProductUpdate
 
 
-class ShortcutsBar(Static):
-    """Bar at bottom showing keyboard shortcuts."""
-
-    shortcuts = reactive("")
-
-    def watch_shortcuts(self, shortcuts: str) -> None:
-        """Update display when shortcuts change."""
-        self.update(shortcuts)
-
-
-class ProductNewScreen(Screen):
-    """Create new product screen."""
+class ProductEditScreen(Screen):
+    """Edit existing product screen."""
 
     CSS_PATH = "../css/main.tcss"
 
     BINDINGS = [
         ("escape", "go_back", "Back"),
-        ("c", "create_product", "Create"),
+        ("c", "save_product", "Save"),
         ("q", "logout", "Logout"),
     ]
 
-    def compose(self) -> ComposeResult:
-        # Header
-        with Container(classes="workspace-header"):
-            yield Label("CTRL Market - New Product", classes="workspace-title")
+    def __init__(self, product_id: int) -> None:
+        self.product_id = product_id
+        self.product = None
+        super().__init__()
 
-        # Main content
+    def compose(self) -> ComposeResult:
+        with Container(classes="workspace-header"):
+            yield Label("CTRL Market - Edit Product", classes="workspace-title")
+
         with Container(classes="workspace-content"):
             with Container(classes="form-container"):
-                yield Label("Create New Product", classes="form-title")
+                yield Label("Edit Product", classes="form-title")
 
-                # Access denied message (hidden by default)
                 yield Label(
-                    "Access Denied: Only Admins and Specialists can create products.",
+                    "Access Denied: Only Admins and Specialists can edit products.",
                     id="access-denied",
                     classes="login-error",
                 )
 
-                # Form container
                 with Container(id="form-content"):
                     with Horizontal(classes="form-row"):
                         yield Label("Name:", classes="form-label")
@@ -62,28 +52,33 @@ class ProductNewScreen(Screen):
                         yield Label("Price:", classes="form-label")
                         yield Input(placeholder="0.00", id="price")
 
-        # Shortcuts bar
-        shortcuts_bar = ShortcutsBar(id="shortcuts-bar", classes="shortcuts-bar")
-        shortcuts_bar.shortcuts = "\\[Esc]Back \\[c]Create Product"
+        shortcuts_bar = Static(
+            "\\[Esc]Back \\[c]Save Product", id="shortcuts-bar", classes="shortcuts-bar"
+        )
         yield shortcuts_bar
 
     def on_mount(self) -> None:
-        """Check permissions when screen mounts."""
+        """Load product data and check permissions."""
         current_user = getattr(self.app, "current_user", None)
 
         if not current_user or current_user.role not in ("Specialist", "Admin"):
-            # Customers cannot access this screen
             self.query_one("#form-content", Container).display = False
             self.query_one("#access-denied", Label).display = True
-        else:
-            # Admins and specialists can create products
-            self.query_one("#form-content", Container).display = True
-            self.query_one("#access-denied", Label).display = False
+            return
 
-    def action_create_product(self) -> None:
-        """Create the product."""
+        self.product = get_product_by_id(self.product_id)
+        if self.product:
+            self.query_one("#name", Input).value = self.product.name
+            self.query_one("#category", Input).value = self.product.category
+            self.query_one("#price", Input).value = str(self.product.price)
+
+    def action_save_product(self) -> None:
+        """Save the product changes."""
         current_user = getattr(self.app, "current_user", None)
         if not current_user or current_user.role not in ("Specialist", "Admin"):
+            return
+
+        if not self.product:
             return
 
         name = self.query_one("#name", Input).value.strip()
@@ -100,11 +95,15 @@ class ProductNewScreen(Screen):
         except ValueError:
             return
 
-        product = ProductCreate(name=name, category=category, price=price)
+        update_data = ProductUpdate(
+            name=name if name != self.product.name else None,
+            category=category if category != self.product.category else None,
+            price=price if price != self.product.price else None,
+        )
 
         try:
-            create_product(product)
-            self.app.pop_screen()
+            if update_product(self.product_id, update_data):
+                self.app.pop_screen()
         except Exception:
             pass
 

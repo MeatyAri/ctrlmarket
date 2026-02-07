@@ -1,5 +1,6 @@
 """Orders management screen."""
 
+from textual import on
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal
 from textual.screen import Screen
@@ -129,10 +130,21 @@ class OrdersScreen(Screen):
                 order.status,
             )
 
-    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
-        """Handle row selection."""
-        row_data = event.data_table.get_row(event.row_key)
-        self.selected_order_id = int(row_data[0])
+    def _get_selected_order_id(self) -> int | None:
+        """Get order ID from currently highlighted row."""
+        table = self.query_one("#orders-table", DataTable)
+        if table.cursor_row is None:
+            return None
+        try:
+            row_data = table.get_row_at(table.cursor_row)
+            return int(row_data[0])
+        except (IndexError, ValueError):
+            return None
+
+    @on(DataTable.RowHighlighted, "#orders-table")
+    def on_datatable_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
+        """Track cursor movement to auto-select highlighted row."""
+        self.selected_order_id = self._get_selected_order_id()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button presses."""
