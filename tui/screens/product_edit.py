@@ -3,10 +3,11 @@
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal
 from textual.screen import Screen
-from textual.widgets import Input, Label, Static
+from textual.widgets import Input, Label
 
 from database.queries import get_product_by_id, update_product
 from models import ProductUpdate
+from tui.dialogs import ShortcutsBar
 
 
 class ProductEditScreen(Screen):
@@ -16,7 +17,7 @@ class ProductEditScreen(Screen):
 
     BINDINGS = [
         ("escape", "go_back", "Back"),
-        ("c", "save_product", "Save"),
+        ("ctrl+enter", "save_product", "Save Product"),
         ("q", "logout", "Logout"),
     ]
 
@@ -26,39 +27,40 @@ class ProductEditScreen(Screen):
         super().__init__()
 
     def compose(self) -> ComposeResult:
-        with Container(classes="workspace-header"):
-            yield Label("CTRL Market - Edit Product", classes="workspace-title")
+        with Container(classes="screen-layout"):
+            with Container(classes="workspace-header"):
+                yield Label("CTRL Market - Edit Product", classes="workspace-title")
 
-        with Container(classes="workspace-content"):
-            with Container(classes="form-container"):
-                yield Label("Edit Product", classes="form-title")
+            with Container(classes="workspace-content"):
+                with Container(classes="form-container"):
+                    yield Label("Edit Product", classes="form-title")
 
-                yield Label(
-                    "Access Denied: Only Admins and Specialists can edit products.",
-                    id="access-denied",
-                    classes="login-error",
-                )
+                    yield Label(
+                        "Access Denied: Only Admins and Specialists can edit products.",
+                        id="access-denied",
+                        classes="login-error",
+                    )
 
-                with Container(id="form-content"):
-                    with Horizontal(classes="form-row"):
-                        yield Label("Name:", classes="form-label")
-                        yield Input(placeholder="Product name", id="name")
+                    with Container(id="form-content"):
+                        with Horizontal(classes="form-row"):
+                            yield Label("Name:", classes="form-label")
+                            yield Input(placeholder="Product name", id="name")
 
-                    with Horizontal(classes="form-row"):
-                        yield Label("Category:", classes="form-label")
-                        yield Input(placeholder="Category", id="category")
+                        with Horizontal(classes="form-row"):
+                            yield Label("Category:", classes="form-label")
+                            yield Input(placeholder="Category", id="category")
 
-                    with Horizontal(classes="form-row"):
-                        yield Label("Price:", classes="form-label")
-                        yield Input(placeholder="0.00", id="price")
+                        with Horizontal(classes="form-row"):
+                            yield Label("Price:", classes="form-label")
+                            yield Input(placeholder="0.00", id="price")
 
-        shortcuts_bar = Static(
-            "\\[Esc]Back \\[c]Save Product", id="shortcuts-bar", classes="shortcuts-bar"
-        )
-        yield shortcuts_bar
+            yield ShortcutsBar(id="shortcuts-bar", classes="shortcuts-bar")
 
     def on_mount(self) -> None:
         """Load product data and check permissions."""
+        # Initialize access denied label as hidden
+        self.query_one("#access-denied", Label).display = False
+
         current_user = getattr(self.app, "current_user", None)
 
         if not current_user or current_user.role not in ("Specialist", "Admin"):
@@ -71,6 +73,10 @@ class ProductEditScreen(Screen):
             self.query_one("#name", Input).value = self.product.name
             self.query_one("#category", Input).value = self.product.category
             self.query_one("#price", Input).value = str(self.product.price)
+
+        # Set shortcuts after widget is mounted
+        shortcuts_bar = self.query_one("#shortcuts-bar", ShortcutsBar)
+        shortcuts_bar.shortcuts = "\\[Ctrl+Enter]Save Product  \\[Esc]Back  \\[q]Logout"
 
     def action_save_product(self) -> None:
         """Save the product changes."""

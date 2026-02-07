@@ -194,16 +194,16 @@ class WorkspaceScreen(Screen):
             if not is_customer:
                 shortcuts.append("\\[c]Complete")
             if not is_specialist:
-                shortcuts.append("\[x]Cancel")
+                shortcuts.append("\\[x]Cancel")
             shortcuts.append("\\[r]Refresh")
         elif active_tab == "services":
             if not is_specialist:
-                shortcuts.append("\[n]New")
+                shortcuts.append("\\[n]New")
             if is_specialist:
-                shortcuts.append("\[c]Complete \[a]Assign")
+                shortcuts.append("\\[c]Complete \\[a]Assign")
             elif not is_customer:
-                shortcuts.append("\[c]Complete")
-            shortcuts.append("\[r]Refresh")
+                shortcuts.append("\\[c]Complete")
+            shortcuts.append("\\[r]Refresh")
 
         shortcuts_bar = self.query_one("#shortcuts-bar", ShortcutsBar)
         shortcuts_bar.shortcuts = "  |  ".join(shortcuts)

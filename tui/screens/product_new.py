@@ -2,22 +2,12 @@
 
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal
-from textual.reactive import reactive
 from textual.screen import Screen
-from textual.widgets import Input, Label, Static
+from textual.widgets import Input, Label
 
 from database.queries import create_product
 from models import ProductCreate
-
-
-class ShortcutsBar(Static):
-    """Bar at bottom showing keyboard shortcuts."""
-
-    shortcuts = reactive("")
-
-    def watch_shortcuts(self, shortcuts: str) -> None:
-        """Update display when shortcuts change."""
-        self.update(shortcuts)
+from tui.dialogs import ShortcutsBar
 
 
 class ProductNewScreen(Screen):
@@ -27,58 +17,55 @@ class ProductNewScreen(Screen):
 
     BINDINGS = [
         ("escape", "go_back", "Back"),
-        ("c", "create_product", "Create"),
+        ("ctrl+enter", "create_product", "Create Product"),
         ("q", "logout", "Logout"),
     ]
 
     def compose(self) -> ComposeResult:
-        # Header
-        with Container(classes="workspace-header"):
-            yield Label("CTRL Market - New Product", classes="workspace-title")
+        with Container(classes="screen-layout"):
+            with Container(classes="workspace-header"):
+                yield Label("CTRL Market - New Product", classes="workspace-title")
 
-        # Main content
-        with Container(classes="workspace-content"):
-            with Container(classes="form-container"):
-                yield Label("Create New Product", classes="form-title")
+            with Container(classes="workspace-content"):
+                with Container(classes="form-container"):
+                    yield Label("Create New Product", classes="form-title")
 
-                # Access denied message (hidden by default)
-                yield Label(
-                    "Access Denied: Only Admins and Specialists can create products.",
-                    id="access-denied",
-                    classes="login-error",
-                )
+                    yield Label(
+                        "Access Denied: Only Admins and Specialists can create products.",
+                        id="access-denied",
+                        classes="login-error",
+                    )
 
-                # Form container
-                with Container(id="form-content"):
-                    with Horizontal(classes="form-row"):
-                        yield Label("Name:", classes="form-label")
-                        yield Input(placeholder="Product name", id="name")
+                    with Container(id="form-content"):
+                        with Horizontal(classes="form-row"):
+                            yield Label("Name:", classes="form-label")
+                            yield Input(placeholder="Product name", id="name")
 
-                    with Horizontal(classes="form-row"):
-                        yield Label("Category:", classes="form-label")
-                        yield Input(placeholder="Category", id="category")
+                        with Horizontal(classes="form-row"):
+                            yield Label("Category:", classes="form-label")
+                            yield Input(placeholder="Category", id="category")
 
-                    with Horizontal(classes="form-row"):
-                        yield Label("Price:", classes="form-label")
-                        yield Input(placeholder="0.00", id="price")
+                        with Horizontal(classes="form-row"):
+                            yield Label("Price:", classes="form-label")
+                            yield Input(placeholder="0.00", id="price")
 
-        # Shortcuts bar
-        shortcuts_bar = ShortcutsBar(id="shortcuts-bar", classes="shortcuts-bar")
-        shortcuts_bar.shortcuts = "\\[Esc]Back \\[c]Create Product"
-        yield shortcuts_bar
+            yield ShortcutsBar(id="shortcuts-bar", classes="shortcuts-bar")
 
     def on_mount(self) -> None:
         """Check permissions when screen mounts."""
         current_user = getattr(self.app, "current_user", None)
 
         if not current_user or current_user.role not in ("Specialist", "Admin"):
-            # Customers cannot access this screen
             self.query_one("#form-content", Container).display = False
             self.query_one("#access-denied", Label).display = True
         else:
-            # Admins and specialists can create products
             self.query_one("#form-content", Container).display = True
             self.query_one("#access-denied", Label).display = False
+
+        shortcuts_bar = self.query_one("#shortcuts-bar", ShortcutsBar)
+        shortcuts_bar.shortcuts = (
+            "\\[Ctrl+Enter]Create Product  \\[Esc]Back  \\[q]Logout"
+        )
 
     def action_create_product(self) -> None:
         """Create the product."""
